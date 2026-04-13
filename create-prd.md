@@ -79,3 +79,4 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 1. Do NOT start implementing the PRD
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the PRD
+4. After saving the PRD, always tell the user: "PRD saved. Next step: Run `generate-spec.md` to generate behavioral contracts and a failing test skeleton before creating tasks. Required for any feature that touches an API, changes a data model, or has non-obvious behavior."
