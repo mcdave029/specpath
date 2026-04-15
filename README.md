@@ -38,6 +38,26 @@ One 10-minute spec review eliminates entire categories of production incidents.
 
 ---
 
+## Steering Documents
+
+Before running the pipeline on any feature, make sure your project has steering documents. These are persistent, project-level context files that every spec and every task reads before doing anything. They are the project constitution — they answer the questions the AI would otherwise guess at.
+
+Three standard files:
+
+| File | What it captures |
+|---|---|
+| `product.md` | What the product is, who it is for, what problems it solves |
+| `tech.md` | Tech stack, architectural patterns, constraints, what NOT to use |
+| `structure.md` | Project layout, naming conventions, file organization rules |
+
+Place them somewhere your AI tool loads automatically — `.claude/steering/` for Claude Code, `CLAUDE.md` for a single flat file, or wherever your tool looks for persistent context.
+
+Keep them short. Update them when the project changes. Every spec you write will be better for it because the AI enters the conversation already knowing the architecture and constraints it must work within.
+
+If your project already has a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`, those serve the same purpose — you do not need separate steering files.
+
+---
+
 ## Three Levels of Commitment
 
 Not every feature needs the same investment. Pick your level before starting.

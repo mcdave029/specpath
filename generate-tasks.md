@@ -57,16 +57,33 @@ Slice tasks by user-visible outcome, not by layer. Each task should deliver some
 - Task 2.0: User can [do X] (includes data access + logic + UI for this slice)
 - Task 3.0: User can [do Y] (includes data access + logic + UI for this slice)
 
+### Task Sizing
+
+Every sub-task must meet these criteria before it is considered atomic enough to delegate:
+
+| Criterion | Target |
+|---|---|
+| File scope | 1–3 related files maximum |
+| Time to complete | 15–30 minutes |
+| Outcomes | One testable outcome per task |
+| File paths | Exact files to create or modify must be named |
+| Task type | Coding only — no deployment, no user testing, no documentation-only tasks |
+
+**Title discipline:** Avoid vague words in task titles. If the title contains "system", "integration", "complete", or "setup", the task is almost certainly too broad — split it.
+
+If a task exceeds these bounds, split it before presenting parent tasks to the user. An AI agent that receives an oversized task will make architectural decisions mid-implementation.
+
 ### Leverage Information
 
-Every sub-task that touches existing code must include a Leverage line pointing to the relevant existing module, pattern, or utility:
+Every sub-task that touches existing code must include a Leverage line pointing to the relevant existing module, pattern, or utility. Each sub-task should also name the exact files it will create or modify:
 
 ```markdown
 - [ ] 2.1 Implement [behavior — see spec §3 Constraints]
+  Files: path/to/file-to-create.ext, path/to/file-to-modify.ext
   Leverage: path/to/existing/module.ext
 ```
 
-This prevents the AI from reinventing patterns that already exist.
+The `Files:` field makes scope explicit before the agent starts. The `Leverage:` field prevents the AI from reinventing patterns that already exist. Both are required for any sub-task that touches code.
 
 ### Atomic Commits
 
@@ -131,14 +148,18 @@ When a spec exists, the final task is always "Verify all spec success criteria."
 
 - [ ] 2.0 [First vertical slice — user-visible outcome]
   - [ ] 2.1 [Sub-task — see spec §3 Constraints]
+    Files: [path/to/file.ext]
     Leverage: [path/to/existing/module]
   - [ ] 2.2 [Sub-task — see spec §4 Phase 2]
+    Files: [path/to/file.ext]
     Leverage: [path/to/existing/pattern]
 
 - [ ] 3.0 [Second vertical slice — user-visible outcome]
   - [ ] 3.1 [Sub-task — see spec §3 Constraints]
+    Files: [path/to/file.ext]
     Leverage: [path/to/existing/module]
   - [ ] 3.2 [Sub-task — see spec §4 Phase 2]
+    Files: [path/to/file.ext]
     Leverage: [path/to/existing/pattern]
 
 - [ ] N.0 Verify all spec success criteria
