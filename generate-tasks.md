@@ -1,89 +1,118 @@
-# Rule: Generating a Task List from User Requirements
+# Rule: Generating a Task List from a Spec
 
 ## Goal
 
-To guide an AI assistant in creating a detailed, step-by-step task list in Markdown format based on user requirements, feature requests, or existing documentation. The task list should guide a developer through implementation.
+To guide an AI assistant in creating a detailed, step-by-step task list in Markdown format based on a behavioral spec. The task list should guide a developer through implementation with atomic tasks, walking skeleton structure, vertical slices, and leverage information.
 
 ## Output
 
 - **Format:** Markdown (`.md`)
 - **Location:** `/tasks/`
-- **Filename:** `tasks-[feature-name].md` (e.g., `tasks-user-profile-editing.md`)
+- **Filename:** `tasks-[feature-name].md`
 
 ## Process
 
-1.  **Check for Spec:** Before generating tasks, check if `tasks/spec-[feature].md` exists.
-    - **If spec exists:** Read both `spec-[feature].md` and the test skeleton(s) fully. Tasks must reference spec sections and frame all implementation work as "make these tests pass."
-    - **If no spec exists:** STOP and warn the user: "No spec file found for this feature. For any feature that touches an API, changes a data model, or has non-obvious behavior, run `generate-spec.md` first. Skipping the spec means the AI will guess at behavioral contracts during implementation. Proceed without a spec only for trivial changes (config tweaks, copy updates, single-line fixes). Reply 'skip spec' to proceed anyway."
-    - Wait for the user to confirm before continuing if no spec was found.
-2.  **Receive Requirements:** The user provides a feature request, task description, or points to existing documentation
-3.  **Analyze Requirements:** The AI analyzes the functional requirements, user needs, and implementation scope from the provided information
-4.  **Phase 1: Generate Parent Tasks:** Based on the requirements analysis, create the file and generate the main, high-level tasks required to implement the feature. **IMPORTANT: Always include task 0.0 "Create feature branch" as the first task, unless the user specifically requests not to create a branch.** When a spec exists, always include task 1.0 "Read spec and confirm tests RED" and a final task "All spec tests green." Use your judgement on how many additional high-level tasks to use. It's likely to be about 5. Present these tasks to the user in the specified format (without sub-tasks yet). Inform the user: "I have generated the high-level tasks based on your requirements. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
-5.  **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
-6.  **Phase 2: Generate Sub-Tasks:** Once the user confirms, break down each parent task into smaller, actionable sub-tasks necessary to complete the parent task. Ensure sub-tasks logically follow from the parent task and cover the implementation details implied by the requirements. When a spec exists, sub-tasks must cite the relevant spec section (e.g., "see spec §API Contracts").
-7.  **Identify Relevant Files:** Based on the tasks and requirements, identify potential files that will need to be created or modified. List these under the `Relevant Files` section, including spec files and test skeletons if they exist.
-8.  **Generate Final Output:** Combine the parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
-9.  **Save Task List:** Save the generated document in the `/tasks/` directory with the filename `tasks-[feature-name].md`, where `[feature-name]` describes the main feature or task being implemented (e.g., if the request was about user profile editing, the output is `tasks-user-profile-editing.md`).
+1. **Check for Spec:** Before generating tasks, check if `tasks/spec-[feature].md` exists.
+   - **If spec exists:** Read both the spec and PRD fully. Tasks must reference spec sections and frame all implementation work as "satisfy these constraints and success criteria."
+   - **If no spec exists:** STOP and warn the user: "No spec file found for this feature. For any feature where files affected > 5 or requirements are unclear, run `generate-spec.md` first. Skipping the spec means the AI will guess at constraints during implementation. Proceed without a spec only for trivial changes (single-file fixes, config tweaks, copy updates). Reply 'skip spec' to proceed anyway."
+   - Wait for the user to confirm before continuing if no spec was found.
+2. **Receive Requirements:** The user provides a feature request, task description, or points to an existing spec and PRD.
+3. **Analyze Requirements:** Analyze the functional requirements, constraints, and implementation scope from the provided information.
+4. **Phase 1: Generate Parent Tasks:** Create the file and generate the main, high-level tasks. **Always include task 0.0 "Create feature branch" as the first task** unless the user requests otherwise. **Always include task 1.0 "Walking skeleton"** as the first implementation task — stubs, interfaces, type definitions, empty modules with correct signatures, no behavior. When a spec exists, include a final task "Verify all spec success criteria." Present parent tasks to the user and say: "I have generated the high-level tasks. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
+5. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
+6. **Phase 2: Generate Sub-Tasks:** Break down each parent task into smaller, actionable sub-tasks. When a spec exists, each sub-task must cite the relevant spec section (e.g., "see spec §3 Constraints"). Include leverage information pointing to existing code to reuse.
+7. **Identify Relevant Files:** List files that will need to be created or modified, including the spec and PRD if they exist.
+8. **Generate Final Output:** Combine parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
+9. **Save Task List:** Save to `/tasks/tasks-[feature-name].md`.
+
+## Task Design Rules
+
+### Walking Skeleton First
+
+Task 1.0 is ALWAYS the walking skeleton: stubs, interfaces, type definitions, and empty modules with correct signatures. No behavior. No logic. This forces architectural thinking before implementation and gives all subsequent tasks a clear structure to fill in.
+
+If you skip the walking skeleton, the AI will make architectural decisions while writing logic — the most expensive time to discover wrong choices.
+
+### Vertical Slices
+
+Slice tasks by user-visible outcome, not by layer. Each task should deliver something observable end-to-end.
+
+**Wrong (layer slicing):**
+- Task 2.0: Build all data access
+- Task 3.0: Build all business logic
+- Task 4.0: Build all UI
+
+**Right (vertical slicing):**
+- Task 2.0: User can [do X] (includes data access + logic + UI for this slice)
+- Task 3.0: User can [do Y] (includes data access + logic + UI for this slice)
+
+### Leverage Information
+
+Every sub-task that touches existing code must include a Leverage line pointing to the relevant existing module, pattern, or utility:
+
+```markdown
+- [ ] 2.1 Implement [behavior — see spec §3 Constraints]
+  Leverage: path/to/existing/module.ext
+```
+
+This prevents the AI from reinventing patterns that already exist.
+
+### Final Task: Spec Verification
+
+When a spec exists, the final task is always "Verify all spec success criteria." The agent checks each Given/When/Then criterion in the spec §5 and confirms it is met — not by running tests, but by tracing the behavior through the implementation.
 
 ## Output Format
-
-The generated task list _must_ follow this structure:
 
 ```markdown
 ## Relevant Files
 
 <!-- If a spec was generated, always list it first -->
-- `tasks/spec-[feature-name].md` - Behavioral contracts — read before writing any code.
-- `tasks/spec-[feature-name].test.ts` - Executable spec (TypeScript) — all tests must be GREEN when done.
-- `spec/[domain]/[feature-name]_spec.rb` - Executable spec (Rails) — all examples must pass when done.
+- `tasks/spec-[feature-name].md` - Behavioral spec — read before writing any code.
+- `tasks/prd-[feature-name].md` - Product requirements — context for why this is being built.
+- `tasks/research-[feature-name].md` - Research summary (if it exists).
 
-- `path/to/potential/file1.ts` - Brief description of why this file is relevant (e.g., Contains the main component for this feature).
-- `path/to/file1.test.ts` - Unit tests for `file1.ts`.
-- `path/to/another/file.tsx` - Brief description (e.g., API route handler for data submission).
-- `path/to/another/file.test.tsx` - Unit tests for `another/file.tsx`.
-- `lib/utils/helpers.ts` - Brief description (e.g., Utility functions needed for calculations).
-- `lib/utils/helpers.test.ts` - Unit tests for `helpers.ts`.
+- `path/to/file.ext` - Brief description of why this file is relevant.
+- `path/to/another/file.ext` - Brief description.
 
 ### Notes
 
-- Unit tests should typically be placed alongside the code files they are testing (e.g., `MyComponent.tsx` and `MyComponent.test.tsx` in the same directory).
-- Use `npx jest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Jest configuration.
-- Use `bundle exec rspec spec/[path]` to run RSpec examples.
-- **When a spec exists:** Definition of done = all spec tests GREEN and no regressions in the full suite.
+- Run your test suite after each parent task to catch regressions early.
+- **When a spec exists:** Definition of done = all spec §5 Success Criteria met, verified by the final task.
 
 ## Instructions for Completing Tasks
 
-**IMPORTANT:** As you complete each task, you must check it off in this markdown file by changing `- [ ]` to `- [x]`. This helps track progress and ensures you don't skip any steps.
-
-Example:
-- `- [ ] 1.1 Read file` → `- [x] 1.1 Read file` (after completing)
-
-Update the file after completing each sub-task, not just after completing an entire parent task.
+**IMPORTANT:** As you complete each task, check it off by changing `- [ ]` to `- [x]`. Update after completing each sub-task, not just after completing a parent task.
 
 ## Tasks
 
 - [ ] 0.0 Create feature branch
-  - [ ] 0.1 Create and checkout a new branch for this feature (e.g., `git checkout -b feature/[feature-name]`)
+  - [ ] 0.1 Create and checkout a new branch for this feature
 
-<!-- Include tasks 1.0 and N.0 below when a spec file exists -->
-- [ ] 1.0 Read spec and confirm tests RED
-  - [ ] 1.1 Read `tasks/spec-[feature-name].md` fully before writing any code
-  - [ ] 1.2 Run the test skeleton — confirm every test/example is RED (none passing yet)
-- [ ] 2.0 Parent Task Title
-  - [ ] 2.1 [Sub-task description — see spec §Section Name]
-  - [ ] 2.2 [Sub-task description — see spec §Section Name]
-- [ ] 3.0 Parent Task Title
-  - [ ] 3.1 [Sub-task description]
-- [ ] 4.0 Parent Task Title (may not require sub-tasks if purely structural or configuration)
-- [ ] N.0 All spec tests green
-  - [ ] N.1 Run full test suite — confirm no regressions
-  - [ ] N.2 Run spec skeleton — 0 pending, 0 failing, 0 RED
+- [ ] 1.0 Walking skeleton
+  - [ ] 1.1 Create all new files with empty stubs and correct signatures — no behavior yet
+  - [ ] 1.2 Define all interfaces, types, and module boundaries [see spec §1 Reference Architecture]
+  - [ ] 1.3 Confirm the skeleton compiles / imports cleanly before adding any logic
+
+- [ ] 2.0 [First vertical slice — user-visible outcome]
+  - [ ] 2.1 [Sub-task — see spec §3 Constraints]
+    Leverage: [path/to/existing/module]
+  - [ ] 2.2 [Sub-task — see spec §4 Phase 2]
+    Leverage: [path/to/existing/pattern]
+
+- [ ] 3.0 [Second vertical slice — user-visible outcome]
+  - [ ] 3.1 [Sub-task]
+  - [ ] 3.2 [Sub-task]
+
+- [ ] N.0 Verify all spec success criteria
+  - [ ] N.1 Trace each Given/When/Then in spec §5 through the implementation
+  - [ ] N.2 Confirm all spec §3 Constraints are enforced — not just in tests, in the code
+  - [ ] N.3 Run full test suite — confirm no regressions
 ```
 
 ## Interaction Model
 
-The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to generate the detailed sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details.
+The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details.
 
 ## Target Audience
 
-Assume the primary reader of the task list is a **junior developer** who will implement the feature.
+Assume the primary reader of the task list is a developer implementing the feature with AI assistance. Tasks should be atomic enough that an AI agent can complete each one in a single focused session without needing to make architectural decisions mid-task.
