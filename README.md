@@ -1,130 +1,194 @@
-# AI Dev Tasks
+# specpath
 
-Welcome to **AI Dev Tasks**! This repository provides a collection of markdown files designed to supercharge your feature development workflow with AI-powered IDEs and CLIs. These tools work with any AI coding assistant including [Amp](https://ampcode.com), Claude Code, Windsurf, and others. By leveraging these structured prompts, you can systematically approach building features, from ideation to implementation, with built-in checkpoints for verification.
+A Spec-Driven Development workflow toolkit for AI-assisted engineering.
 
-Stop wrestling with monolithic AI requests and start guiding your AI collaborator step-by-step!
-
-## The Core Idea
-
-Building complex features with AI can sometimes feel like a black box. This workflow aims to bring structure, clarity, and control to the process by:
-
-1. **Defining Scope:** Clearly outlining what needs to be built with a Product Requirement Document (PRD).
-2. **Detailed Planning:** Breaking down the PRD into a granular, actionable task list.
-3. **Iterative Implementation:** Guiding the AI to tackle one task at a time, allowing you to review and approve each change.
-
-This structured approach helps ensure the AI stays on track, makes it easier to debug issues, and gives you confidence in the generated code.
-
-## Workflow: From Idea to Implemented Feature
-
-Here's the step-by-step process using the `.md` files in this repository:
-
-### 1. Create a Product Requirement Document (PRD)
-
-First, lay out the blueprint for your feature. A PRD clarifies what you're building, for whom, and why.
-
-You can create a lightweight PRD directly within your AI tool of choice:
-
-1. Ensure you have the `create-prd.md` file from this repository accessible.
-2. In your AI tool, initiate PRD creation:
-
-    ```text
-    Use @create-prd.md
-    Here's the feature I want to build: [Describe your feature in detail]
-    Reference these files to help you: [Optional: @file1.py @file2.ts]
-    ```
-
-
-    ![Example of initiating PRD creation](https://pbs.twimg.com/media/Go6DDlyX0AAS7JE?format=jpg&name=large)
-
-### 2. Generate Your Task List from the PRD
-
-With your PRD drafted (e.g., `MyFeature-PRD.md`), the next step is to generate a detailed, step-by-step implementation plan for your AI Developer.
-
-1. Ensure you have `generate-tasks.md` accessible.
-2. In your AI tool, use the PRD to create tasks:
-
-    ```text
-    Now take @MyFeature-PRD.md and create tasks using @generate-tasks.md
-    ```
-    *(Note: Replace `@MyFeature-PRD.md` with the actual filename of the PRD you generated in step 1.)*
-
-    ![Example of generating tasks from PRD](https://pbs.twimg.com/media/Go6FITbWkAA-RCT?format=jpg&name=medium)
-
-### 3. Examine Your Task List
-
-You'll now have a well-structured task list, often with tasks and sub-tasks, ready for the AI to start working on. This provides a clear roadmap for implementation.
-
-![Example of a generated task list](https://pbs.twimg.com/media/Go6GNuOWsAEcSDm?format=jpg&name=medium)
-
-### 4. Instruct the AI to Work Through Tasks (and Mark Completion)
-
-To ensure methodical progress and allow for verification, instruct the AI to work through the task list one sub-task at a time.
-
-1. In your AI tool, tell the AI to start with the first task (e.g., `1.1`):
-
-    ```text
-    Please start on task 1.1 from the generated task list.
-    ```
-
-    The AI will attempt the task and then prompt you to review.
-
-    ![Example of starting on a task](https://pbs.twimg.com/media/Go6I41KWcAAAlHc?format=jpg&name=medium)
-
-### 5. Progress
-
-The AI will continue working through the remaining tasks in the list.
-
-![Example of a progressing task list with completed items](https://pbs.twimg.com/media/Go6KrXZWkAA_UuX?format=jpg&name=medium)
-
-While it's not always perfect, this method has proven to be a very reliable way to build out larger features with AI assistance.
-
-### Video Demonstration
-
-If you'd like to see this in action, I demonstrated it on [Claire Vo's "How I AI" podcast](https://www.youtube.com/watch?v=fD4ktSkNCw4).
-
-[![Demonstration of AI Dev Tasks on How I AI Podcast](https://img.youtube.com/vi/fD4ktSkNCw4/maxresdefault.jpg)](https://www.youtube.com/watch?v=fD4ktSkNCw4).
-
-## Files in this Repository
-
-* **`create-prd.md`**: Guides the AI in generating a Product Requirement Document for your feature.
-* **`generate-tasks.md`**: Takes a PRD markdown file as input and helps the AI break it down into a detailed, step-by-step implementation task list.
-
-## Benefits
-
-* **Structured Development:** Enforces a clear process from idea to code.
-* **Step-by-Step Verification:** Allows you to review and approve AI-generated code at each small step, ensuring quality and control.
-* **Manages Complexity:** Breaks down large features into smaller, digestible tasks for the AI, reducing the chance of it getting lost or generating overly complex, incorrect code.
-* **Improved Reliability:** Offers a more dependable approach to leveraging AI for significant development work compared to single, large prompts.
-* **Clear Progress Tracking:** Provides a visual representation of completed tasks, making it easy to see how much has been done and what's next.
-
-## How to Use
-
-1. **Clone or Download:** Get these `.md` files into your project or a central location where your AI tool can access them.
-   ```bash
-   git clone https://github.com/snarktank/ai-dev-tasks.git
-   ```
-2. **Follow the Workflow:** Systematically use the `.md` files in your AI assistant as described in the workflow above.
-3. **Adapt and Iterate:**
-    * Feel free to modify the prompts within the `.md` files to better suit your specific needs or coding style.
-    * If the AI struggles with a task, try rephrasing your initial feature description or breaking down tasks even further.
-
-
-
-## Tips for Success
-
-* **Be Specific:** The more context and clear instructions you provide (both in your initial feature description and any clarifications), the better the AI's output will be.
-* **Correct File Tagging:** Always ensure you're accurately tagging the PRD filename (e.g., `@MyFeature-PRD.md`) when generating tasks.
-* **Patience and Iteration:** AI is a powerful tool, but it's not magic. Be prepared to guide, correct, and iterate. This workflow is designed to make that iteration process smoother.
-
-## Contributing
-
-Got ideas to improve these `.md` files or have new ones that fit this workflow? Contributions are welcome!
-
-Please feel free to:
-
-* Open an issue to discuss changes or suggest new features.
-* Submit a pull request with your enhancements.
+Works with any AI coding assistant: Claude Code, Amp, Windsurf, Cursor, Copilot, or any tool that accepts markdown prompts.
 
 ---
 
-Happy AI-assisted developing!
+## The Problem
+
+Vibe coding degrades at scale.
+
+When you describe a feature and ask an AI to build it, the first response looks great. The second looks good. By the fifth, you are debugging hallucinated APIs and fixing patterns the AI invented from context drift.
+
+This is not an AI capability problem. It is an information problem. The AI cannot know what it does not know: your architecture, your constraints, your existing patterns. Without that context, it guesses. Guesses compound. Output degrades.
+
+**The Vibe Dip is not random. It is mathematically guaranteed when requirements are ambiguous and context is implicit.**
+
+---
+
+## The Solution
+
+Context persistence + explicit constraints = reliable output.
+
+Specs survive session restarts. Constraints eliminate guessing. Phase gates catch problems at the cheapest possible moment.
+
+The cost of ambiguity escalates sharply once work begins:
+
+| Stage | Cost to fix |
+|---|---|
+| In the spec | 5 minutes |
+| In the interview | 10 minutes |
+| In code | 30 minutes |
+| After first commit | 2-4 hours |
+| In production | 8-16 hours |
+
+One 10-minute spec review eliminates entire categories of production incidents.
+
+---
+
+## The Pipeline
+
+| Phase | File | Output | When to use |
+|---|---|---|---|
+| 0 | `create-prd.md` | `prd-[feature].md` | Always, before any spec work |
+| 1 | `research.md` | `research-[feature].md` | Files affected > 5 OR requirements unclear |
+| 2 | `generate-spec.md` | `spec-[feature].md` | After PRD (and research if Phase 1 ran) |
+| 3 | `interview-spec.md` | Updated spec | After spec is drafted |
+| 4 | `generate-tasks.md` | `tasks-[feature].md` | After interview confirms spec is complete |
+
+### Decision Framework
+
+```
+files affected > 5  OR  requirements unclear  →  full pipeline (all 5 phases)
+borderline case                                →  lightweight spec + phases 3-4
+single file / incident / prototype             →  skip to Phase 4 directly
+```
+
+When in doubt, run the spec. The overhead is 15 minutes. The downside of skipping it can be days.
+
+---
+
+## Files
+
+### `create-prd.md` — Phase 0
+
+Guides the AI through clarifying questions and produces a scored Product Requirements Document. The PRD is the product layer: what you are building and why. It is written for humans and stakeholders.
+
+**Output:** `tasks/prd-[feature].md`
+
+**When:** Always. Even for internal tools and small features. A PRD forces you to articulate the problem before you start solving it.
+
+---
+
+### `research.md` — Phase 1
+
+Compresses hours of investigation into minutes using parallel subagents with context isolation. Each subagent gets a focused research thread (current codebase, reference implementations, design patterns, relevant docs, integration points). Results are synthesized into a single research summary.
+
+**Output:** `tasks/research-[feature].md`
+
+**When:** Files affected > 5 OR requirements are unclear. Skip for single-file changes where the domain is well understood.
+
+---
+
+### `generate-spec.md` — Phase 2
+
+Translates the PRD (and research summary, if available) into a precise behavioral specification. The spec is the technical layer: what the system must and must not do, written for the AI implementing it.
+
+The spec has five sections:
+1. Reference Architecture — the pattern to follow
+2. Current Architecture — what exists today
+3. Constraints — what must NOT happen (the most important section)
+4. Implementation Plan — phased approach
+5. Success Criteria — Given/When/Then acceptance tests
+
+**Constraints matter more than requirements.** "Do NOT pre-fetch more than 3 items" eliminates wrong implementations. "Make it fast" does not.
+
+**Output:** `tasks/spec-[feature].md`
+
+**When:** After PRD. Always before tasks for non-trivial features.
+
+---
+
+### `interview-spec.md` — Phase 3
+
+The AI reads the spec and asks every question that could cause implementation failure. This is the refinement phase: surface ambiguities before a single line of code is written.
+
+Five ambiguity categories the AI will probe:
+1. Data Decisions — boundary values, null handling, validation rules
+2. Conflict Resolution — which rule wins when two apply
+3. Pattern Selection — edge cases where the spec's chosen pattern does not apply
+4. Failure Recovery — retry strategy, partial success, error surfacing
+5. Boundary Conditions — scale, scope, adjacent system interference
+
+Each answer updates the spec inline. The interview ends when all five categories are addressed and the spec Status is updated to "Ready for Implementation."
+
+**Output:** Refined `tasks/spec-[feature].md`
+
+**When:** After spec is drafted. Before tasks are generated. Non-negotiable.
+
+---
+
+### `generate-tasks.md` — Phase 4
+
+Breaks the spec into an ordered, atomic task list. Three structural rules:
+
+**Walking skeleton first.** Task 1.0 is always stubs, interfaces, type definitions, and empty modules with correct signatures. No behavior. This forces architectural thinking before logic.
+
+**Vertical slices.** Each task delivers a user-visible outcome end-to-end. Not "backend work" followed by "frontend work" for the same feature.
+
+**Leverage information.** Every task references existing code to reuse:
+```
+- [ ] 2.1 Implement [behavior]
+  Spec: §3 Constraints, §4 Phase 1
+  Leverage: path/to/existing/module
+```
+
+The final task is always "Verify all spec success criteria" — the AI checks each Given/When/Then in the spec and confirms it is met.
+
+**Output:** `tasks/tasks-[feature].md`
+
+**When:** After the interview confirms the spec is complete.
+
+---
+
+## How to Use
+
+Clone the files to a location your AI tool can access:
+
+```bash
+git clone https://github.com/mcdave029/specpath.git
+```
+
+Then invoke each phase by pointing your AI at the relevant file:
+
+```
+Use @create-prd.md
+Here is the feature I want to build: [describe it]
+```
+
+```
+Use @research.md
+PRD: @tasks/prd-[feature].md
+```
+
+```
+Use @generate-spec.md
+PRD: @tasks/prd-[feature].md
+Research: @tasks/research-[feature].md
+```
+
+```
+Use @interview-spec.md
+Spec: @tasks/spec-[feature].md
+```
+
+```
+Use @generate-tasks.md
+Spec: @tasks/spec-[feature].md
+```
+
+---
+
+## Credits
+
+Phase 0 (`create-prd.md`) and the original Phase 4 (`generate-tasks.md`) are based on [snarktank/ai-dev-tasks](https://github.com/snarktank/ai-dev-tasks).
+
+SDD methodology informed by the [Panaversity Agent Factory curriculum](https://agentfactory.panaversity.org) and the broader spec-driven development community.
+
+---
+
+## Contributing
+
+Open an issue or submit a pull request. The goal is a toolkit that works across stacks, teams, and project sizes without requiring customization.
