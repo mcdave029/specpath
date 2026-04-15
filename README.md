@@ -40,7 +40,9 @@ One 10-minute spec review eliminates entire categories of production incidents.
 
 ## Steering Documents
 
-Before running the pipeline on any feature, make sure your project has steering documents. These are persistent, project-level context files that every spec and every task reads before doing anything. They are the project constitution — they answer the questions the AI would otherwise guess at.
+Before running the pipeline on any feature, make sure your project has steering documents. These are **per-repository, committed files** — they live in the repo root or a subdirectory, travel with the code, and are available to every developer, every AI tool, and every session that clones the project.
+
+They are the project constitution. Every spec and every task reads them before doing anything. They answer the questions the AI would otherwise guess at.
 
 Three standard files:
 
@@ -50,11 +52,18 @@ Three standard files:
 | `tech.md` | Tech stack, architectural patterns, constraints, what NOT to use |
 | `structure.md` | Project layout, naming conventions, file organization rules |
 
-Place them somewhere your AI tool loads automatically — `.claude/steering/` for Claude Code, `CLAUDE.md` for a single flat file, or wherever your tool looks for persistent context.
+Where to put them depends on your tooling:
 
-Keep them short. Update them when the project changes. Every spec you write will be better for it because the AI enters the conversation already knowing the architecture and constraints it must work within.
+| Location | When to use |
+|---|---|
+| `CLAUDE.md` at root | Claude Code — single flat file, simpler projects |
+| `AGENTS.md` at root | Multi-tool projects (Claude Code, Codex, OpenCode, Copilot) |
+| `.claude/steering/` | Prefer structured separation, Claude Code only |
+| `docs/steering/` | Team prefers a docs directory |
 
-If your project already has a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`, those serve the same purpose — you do not need separate steering files.
+If your project already has a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`, those serve the same purpose — you do not need separate steering files. The content matters more than the filename.
+
+Keep them short. Update them when the project changes. Commit every update.
 
 ---
 
