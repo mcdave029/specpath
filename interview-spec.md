@@ -82,6 +82,19 @@ Questions about edge cases, scale, and scope:
 - What adjacent features or systems could interfere with this one?
 - What happens if this feature is called before [dependency] is ready?
 
+## Lightweight Spec Interview
+
+If the spec is the lightweight variant (only Constraints and Success Criteria sections), the full 5-category interview still applies — the scope of questions is smaller, but the categories are not skipped.
+
+Map questions to what exists in the lightweight spec:
+- Data Decisions → probe the Constraints for missing boundary cases
+- Conflict Resolution → probe the Constraints for rules that could conflict
+- Pattern Selection → ask what pattern or approach is implied even if not stated
+- Failure Recovery → probe the Success Criteria for missing failure paths
+- Boundary Conditions → probe the Success Criteria for missing edge cases
+
+When in doubt, ask. A lightweight spec is not an excuse for a lightweight interview.
+
 ## When to Stop
 
 Stop asking questions when:

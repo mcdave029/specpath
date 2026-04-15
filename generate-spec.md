@@ -124,6 +124,18 @@ Use Given/When/Then format.
 If nothing is unresolved, write "None — spec is ready for interview."]
 ```
 
+## Spec Status Lifecycle
+
+The `Status` field in the spec header moves through three states. Never skip a state.
+
+| Status | Set by | Meaning |
+|---|---|---|
+| `Draft` | `generate-spec.md` on creation | Spec written, not yet reviewed |
+| `Ready for Interview` | User after reviewing the draft | Spec is accurate, ready to be interrogated |
+| `Ready for Implementation` | `interview-spec.md` after all questions resolved | All ambiguities resolved, safe to generate tasks |
+
+The spec should never reach `generate-tasks.md` while still in `Draft` status.
+
 ## What This Spec Does NOT Contain
 
 - API endpoint request/response shapes — too prescriptive, constrains the AI unnecessarily

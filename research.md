@@ -121,6 +121,16 @@ Save as `tasks/research-[feature].md`:
 [Anything the research could not answer. These become inputs for spec clarifying questions.]
 ```
 
+## Fallback: No Parallel Agent Capability
+
+If your AI tool cannot spawn parallel subagents, run the threads sequentially instead:
+
+1. Complete Thread 1 fully before starting Thread 2
+2. Give each thread a fresh context window — do not carry findings from one thread into the next conversation
+3. Collect all findings, then write the synthesis manually
+
+The parallelism benefit is reduced but the structured research output still significantly improves spec quality over unguided exploration.
+
 ## Final Instructions
 
 1. **Do NOT write a spec.** Research only. The spec is generated in the next phase.

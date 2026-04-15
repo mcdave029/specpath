@@ -64,6 +64,8 @@ When a spec exists, the final task is always "Verify all spec success criteria."
 ## Output Format
 
 ```markdown
+# Tasks: [Feature Name]
+
 ## Relevant Files
 
 <!-- If a spec was generated, always list it first -->
@@ -100,8 +102,10 @@ When a spec exists, the final task is always "Verify all spec success criteria."
     Leverage: [path/to/existing/pattern]
 
 - [ ] 3.0 [Second vertical slice — user-visible outcome]
-  - [ ] 3.1 [Sub-task]
-  - [ ] 3.2 [Sub-task]
+  - [ ] 3.1 [Sub-task — see spec §3 Constraints]
+    Leverage: [path/to/existing/module]
+  - [ ] 3.2 [Sub-task — see spec §4 Phase 2]
+    Leverage: [path/to/existing/pattern]
 
 - [ ] N.0 Verify all spec success criteria
   - [ ] N.1 Trace each Given/When/Then in spec §5 through the implementation

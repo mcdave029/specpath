@@ -9,7 +9,18 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 1.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
 2.  **Ask Clarifying Questions:** Before writing the PRD, the AI *must* ask only the most essential clarifying questions needed to write a clear PRD. Limit questions to 3-5 critical gaps in understanding. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
 3.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
-4.  **Save PRD:** Save the generated document as `prd-[feature-name].md` inside the `/tasks` directory.
+4.  **Score and Iterate:** Score each PRD section 1–10 using the scale below. Present the scores to the user. Iterate on weak sections until every section reaches 9/10 before moving on. A PRD that scores below 9 on any section will produce an ambiguous spec — do not proceed until it is build-ready.
+
+    | Score | Meaning |
+    |-------|---------|
+    | 1–3   | Barely defined, major gaps |
+    | 4–5   | Directionally correct, missing critical details |
+    | 6–7   | Solid draft, open questions remain |
+    | 8     | Production-ready with minor gaps |
+    | **9** | **Comprehensive — ready to build** |
+    | 10    | Battle-tested, post-implementation |
+
+5.  **Save PRD:** Save the generated document as `prd-[feature-name].md` inside the `/tasks` directory.
 
 ## Clarifying Questions (Guidelines)
 
@@ -66,7 +77,7 @@ The generated PRD should include the following sections:
 
 ## Target Audience
 
-Assume the primary reader of the PRD is a **junior developer**. Therefore, requirements should be explicit, unambiguous, and avoid jargon where possible. Provide enough detail for them to understand the feature's purpose and core logic.
+The PRD is the **product layer** — written for stakeholders, product owners, and anyone who needs to understand what is being built and why. Requirements should be clear enough that a non-technical reader understands the feature's purpose, and specific enough that a developer can derive the full implementation scope from it without needing to guess at intent.
 
 ## Output
 
@@ -79,4 +90,5 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 1. Do NOT start implementing the PRD
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the PRD
-4. After saving the PRD, always tell the user: "PRD saved. Next step: if files affected > 5 or requirements are unclear, run `research.md` first to gather parallel research before the spec. Otherwise go directly to `generate-spec.md`."
+4. Score every section 1–10 and iterate until all sections reach 9/10 — do not save until the PRD is build-ready
+5. After saving the PRD, always tell the user: "PRD saved. Next step: if files affected > 5 or requirements are unclear, run `research.md` first to gather parallel research before the spec. Otherwise go directly to `generate-spec.md`."
