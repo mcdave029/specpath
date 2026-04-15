@@ -38,6 +38,22 @@ One 10-minute spec review eliminates entire categories of production incidents.
 
 ---
 
+## Three Levels of Commitment
+
+Not every feature needs the same investment. Pick your level before starting.
+
+| Level | Name | What it means | When to use |
+|---|---|---|---|
+| 1 | Spec-First | Spec is a planning artifact, discarded after the build | Prototypes, personal projects, single-session work |
+| 2 | Spec-Anchored | Spec and code are both maintained as living artifacts that evolve together | Team projects, systems with a 6+ month lifespan |
+| 3 | Spec-as-Source | Code is regenerated from the spec on demand | Experimental — identical specs do not produce identical code; git diffs become unpredictable |
+
+**Default:** Start at Level 1. Graduate to Level 2 when you are collaborating with a team or maintaining a system long-term. Level 3 is a frontier pattern — understand the tradeoffs before committing to it.
+
+The pipeline below applies to all three levels. What changes is whether the spec is kept and maintained after implementation.
+
+---
+
 ## The Pipeline
 
 | Phase | File | Output | When to use |

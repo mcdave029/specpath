@@ -33,6 +33,17 @@ Task 1.0 is ALWAYS the walking skeleton: stubs, interfaces, type definitions, an
 
 If you skip the walking skeleton, the AI will make architectural decisions while writing logic — the most expensive time to discover wrong choices.
 
+**Stub patterns for walking skeleton tasks:**
+
+| Pattern | When to use | Example |
+|---|---|---|
+| Return empty or hardcoded value | Data layer not yet implemented | `return []` or `return { id: 1 }` |
+| Comment placeholder | Function wiring exists, logic deferred | `// TODO: implement in task 2.1` |
+| Throw "not implemented" | Required interface method, must exist now | `throw new Error("not implemented — see task 2.2")` |
+| `.skip` or `.todo` tests | Test wiring needed, behavior deferred | Confirms test structure without failing the suite |
+
+The goal of the skeleton is to prove the wiring is correct before adding any logic. Every stub should be replaceable by a later task without touching surrounding code.
+
 ### Vertical Slices
 
 Slice tasks by user-visible outcome, not by layer. Each task should deliver something observable end-to-end.
@@ -57,6 +68,27 @@ Every sub-task that touches existing code must include a Leverage line pointing 
 
 This prevents the AI from reinventing patterns that already exist.
 
+### Atomic Commits
+
+Every completed task must be committed before moving to the next one. This is a hard rule, not a suggestion.
+
+One task = one commit. If a task is partially done, do not commit. If a task fails, the rollback does not affect any previously committed task. This makes recovery possible at any point without losing all prior work.
+
+### Context Isolation for Task Execution
+
+When delegating tasks to subagents, each subagent receives only:
+1. The spec (`tasks/spec-[feature].md`)
+2. The specific task it is implementing
+3. The relevant leverage file paths
+
+Do NOT pass the full conversation history. Accumulated context from earlier tasks introduces assumptions and patterns that contaminate downstream implementations. Fresh context per task is a hard rule, not a performance optimization.
+
+### Quality Gates
+
+Set up your quality gates before Task 2.0. At minimum: a type check, a linter, and your test runner. Run them after every parent task — not just at the end.
+
+Broken code must not accumulate across tasks. Each parent task should leave the codebase in a passing state before the next one starts. This is the backpressure mechanism that prevents small errors from compounding into large failures.
+
 ### Final Task: Spec Verification
 
 When a spec exists, the final task is always "Verify all spec success criteria." The agent checks each Given/When/Then criterion in the spec §5 and confirms it is met — not by running tests, but by tracing the behavior through the implementation.
@@ -78,7 +110,9 @@ When a spec exists, the final task is always "Verify all spec success criteria."
 
 ### Notes
 
-- Run your test suite after each parent task to catch regressions early.
+- Set up quality gates (type check, linter, test runner) before Task 2.0 and run them after every parent task.
+- One task = one commit. Commit before moving to the next task. Never batch commits across tasks.
+- When delegating to subagents: give each subagent fresh context — the spec, the task, and leverage paths only. No conversation history.
 - **When a spec exists:** Definition of done = all spec §5 Success Criteria met, verified by the final task.
 
 ## Instructions for Completing Tasks
