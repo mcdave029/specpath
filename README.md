@@ -16,6 +16,14 @@ This is not an AI capability problem. It is an information problem. The AI canno
 
 **The Vibe Dip is not random. It is mathematically guaranteed when requirements are ambiguous and context is implicit.**
 
+Two failure modes drive it:
+
+**Agent Amnesia** — each session starts from zero. Without external memory, context discovered in one session is lost when it ends. The AI re-discovers — or re-invents — the same constraints every time.
+
+**Context Pollution** — within a session, failed attempts and debugging artifacts fill the context window. When space runs out, the agent starts dropping previously discovered bugs and constraints to make room. Output degrades from the inside.
+
+The spec eliminates both. It is the external memory that survives sessions, and the clean source of truth that each subagent reads instead of the polluted conversation history.
+
 ---
 
 ## The Solution
@@ -23,6 +31,8 @@ This is not an AI capability problem. It is an information problem. The AI canno
 Context persistence + explicit constraints = reliable output.
 
 Specs survive session restarts. Constraints eliminate guessing. Phase gates catch problems at the cheapest possible moment.
+
+The spec is also a recovery mechanism. If a session derails, context fills, or implementation drifts from intent — open a new session, pin the spec, and resume from the last committed task. No context rebuilding required.
 
 The cost of ambiguity escalates sharply once work begins:
 
@@ -237,3 +247,7 @@ SDD methodology informed by the [Panaversity Agent Factory curriculum](https://a
 ## Contributing
 
 Open an issue or submit a pull request. The goal is a toolkit that works across stacks, teams, and project sizes without requiring customization.
+
+### Future Enhancement: Adversarial Review
+
+A potential Phase 3.5 (`review-spec.md`): a second agent reads the completed spec and actively tries to break it — finding contradictions, unverifiable constraints, missing failure paths, and architectural assumptions that cannot be confirmed. Adversarial by design. The interview phase asks clarifying questions; the adversarial reviewer tries to prove the spec is wrong. Proposed, not yet built.

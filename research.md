@@ -16,12 +16,13 @@ Skip this step for single-file changes or features in well-understood domains.
 
 ## Process
 
-1. **Receive the PRD:** The user provides a path to `tasks/prd-[feature].md` or describes the feature directly.
-2. **Decompose into research threads:** Identify 3–5 independent questions the research must answer. See thread types below.
-3. **Spawn parallel subagents:** One subagent per thread. Each subagent starts with fresh context — no shared state, no conversation history passed between threads.
-4. **Collect findings:** Each subagent produces a focused written summary of its thread.
-5. **Synthesize:** Merge all summaries into `tasks/research-[feature].md`. Explicitly surface conflicts and contradictions between threads.
-6. **Present to user:** Show the synthesis before proceeding. Wait for confirmation that it is accurate before moving to `generate-spec.md`.
+1. **Check for steering documents:** Before decomposing into threads, check if project constitution files exist (`CLAUDE.md`, `AGENTS.md`, `product.md`, `tech.md`, `structure.md`). If they exist, read them — they may answer questions that would otherwise require a full research thread, and they define the architecture the spec must respect. If none exist, note it in the synthesis: architectural assumptions in this research are inferred from codebase evidence only.
+2. **Receive the PRD:** The user provides a path to `tasks/prd-[feature].md` or describes the feature directly.
+3. **Decompose into research threads:** Identify 3–5 independent questions the research must answer. See thread types below.
+4. **Spawn parallel subagents:** One subagent per thread. Each subagent starts with fresh context — no shared state, no conversation history passed between threads.
+5. **Collect findings:** Each subagent produces a focused written summary of its thread.
+6. **Synthesize:** Merge all summaries into `tasks/research-[feature].md`. Explicitly surface conflicts and contradictions between threads.
+7. **Present to user:** Show the synthesis before proceeding. Wait for confirmation that it is accurate before moving to `generate-spec.md`.
 
 ## Thread Decomposition Criteria
 
@@ -114,12 +115,39 @@ Save as `tasks/research-[feature].md`:
 
 [One paragraph. What the research suggests as the starting point for the spec. Not a design — a direction.]
 
+### Evidence quality
+
+[For each key decision above, note whether findings are:
+- **Confirmed** — directly observed in source (codebase, docs, reference implementation)
+- **Inferred** — logical conclusion from observed evidence, not directly read
+- **Unresolved** — could not be determined
+
+Do not present Inferred findings as Confirmed in the synthesis or carry them into the spec as facts.]
+
 ---
 
 ## Open Questions
 
 [Anything the research could not answer. These become inputs for spec clarifying questions.]
 ```
+
+## Deepening Research
+
+If the initial synthesis is thin, the Recommended Approach is vague, or Open Questions outnumber resolved findings, run a second pass before moving to the spec.
+
+Do NOT prompt "research longer" or "improve the plan" — open-ended expansion produces hallucinated findings dressed as research.
+
+Instead, run a bounded second pass:
+
+1. **Identify the weak thread** — name it specifically (e.g., "Thread 2: Reference Implementations did not find how Jazz handles conflict resolution")
+2. **Define the exact unanswered question** — one question, not a theme
+3. **Spawn a targeted follow-up subagent** with fresh context, the specific question, and a clear stopping condition: "Stop when you can answer [exact question]"
+4. **Update the research artifact** — add findings to the relevant thread's section
+5. **Surface remaining uncertainty** — if the question still cannot be answered after the follow-up, add it to Open Questions; do not fill the gap with inference
+
+A focused second pass on one weak thread costs 5 minutes and is safer than a broad re-run that invites fabricated findings.
+
+---
 
 ## Fallback: No Parallel Agent Capability
 

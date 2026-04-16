@@ -115,6 +115,24 @@ After each answer, update `tasks/spec-[feature].md` directly:
 - If the answer changes a success criterion, update Section 5
 - Update the Status field last, only when all questions are resolved
 
+## Mid-Interview Sub-Research
+
+Some interview questions will surface genuine unknown territory — an external library's approach, a pattern used elsewhere in the codebase, or a constraint that was not in the original research. When this happens, do not guess.
+
+**Protocol:**
+
+1. Pause the interview — note which question triggered the gap
+2. Spawn a targeted research subagent with a fresh context window and the specific question (one question, bounded scope, clear stopping condition)
+3. Wait for findings before proceeding — do not resume on assumptions
+4. Incorporate findings into the spec, tagged as **[Confirmed]** or **[Inferred]** based on what the subagent actually observed
+5. Resume the interview from the paused question
+
+This is not scope creep. The interview's job is to make the spec complete. If completing it requires a 5-minute research pass, that is the interview working correctly.
+
+Do NOT fabricate an answer to avoid the pause. An invented answer in the spec produces an invented implementation.
+
+---
+
 ## Final Instructions
 
 1. **Do NOT generate tasks yet.** The task list is generated after the interview in `generate-tasks.md`.
