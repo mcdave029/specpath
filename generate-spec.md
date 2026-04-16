@@ -14,12 +14,14 @@ Run this step after `create-prd.md` (and `research.md` if Phase 1 ran) and **bef
 
 ## Process
 
-1. **Receive inputs:** The user provides `tasks/prd-[feature].md` and, if it exists, `tasks/research-[feature].md`.
-2. **Ask clarifying questions:** 2–3 questions maximum — only for gaps that block spec precision. See guidelines below.
+1. **Check for steering documents:** Before generating the spec, check if project constitution files exist in this repo (`CLAUDE.md`, `AGENTS.md`, `product.md`, `tech.md`, `structure.md`). If they exist, read them first — they define architecture, conventions, and constraints that would otherwise be guessed. If none exist, note it: assumptions about current architecture and patterns will be inferred from the research and codebase only, and must be tagged as such in §2.
+2. **Receive inputs:** The user provides `tasks/prd-[feature].md` and, if it exists, `tasks/research-[feature].md`.
+3. **Ask clarifying questions:** 2–3 questions maximum — only for gaps that block spec precision. See guidelines below.
 3. **Generate `spec-[feature].md`:** Use the 5-section template below.
 4. **Self-critique:** Before presenting, ask internally: "What would a critical reviewer flag as ambiguous or missing?" Address any P1 issues (blocking ambiguities) before presenting.
 5. **Present to user:** Show the draft spec. Wait for review and corrections.
 6. **Save:** Write to `tasks/spec-[feature].md`.
+7. **Recovery note:** The spec is the recovery point. If a session derails, context fills, or implementation drifts from intent — open a new session, pin the spec, and resume from the last committed task. The spec contains everything the next session needs. No context rebuilding required.
 
 ## Clarifying Question Guidelines
 
@@ -69,7 +71,15 @@ What exists today that this feature touches or extends?
 
 [List affected modules, services, data stores, and interfaces.
 Describe current state only — not desired state.
-If the feature is entirely new with no touchpoints, say so.]
+If the feature is entirely new with no touchpoints, say so.
+
+Tag each item with its evidence quality:
+- **[Confirmed]** — directly observed in the codebase, research, or steering documents
+- **[Inferred]** — logical conclusion from observed evidence, not directly read
+- **[Unresolved]** — could not be determined; surface as an Open Question
+
+Do not present Inferred architecture as Confirmed. An inferred module that does not exist will
+produce a task that fails on the first line.]
 
 ---
 

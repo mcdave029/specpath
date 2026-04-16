@@ -85,11 +85,35 @@ Every sub-task that touches existing code must include a Leverage line pointing 
 
 The `Files:` field makes scope explicit before the agent starts. The `Leverage:` field prevents the AI from reinventing patterns that already exist. Both are required for any sub-task that touches code.
 
+**Grounding rule:** Only include exact file paths if confirmed from the repo — through the spec, research summary, or a direct codebase read. If a path is unknown, write `[path TBD — confirm before implementing]`. Do not invent paths with false precision. Fabricated file paths are the most common cause of tasks that fail on the first attempt.
+
 ### Atomic Commits
 
 Every completed task must be committed before moving to the next one. This is a hard rule, not a suggestion.
 
 One task = one commit. If a task is partially done, do not commit. If a task fails, the rollback does not affect any previously committed task. This makes recovery possible at any point without losing all prior work.
+
+### Role Assignment
+
+Before generating any tasks, declare roles explicitly. The main agent is the orchestrator — its job is to plan, delegate, and verify. Subagents are the implementers — each receives one task, executes it, commits, and stops.
+
+**The orchestrator must not drift into direct implementation.** When you find yourself writing implementation logic in the main session, stop. Create a task and delegate it.
+
+Prompt pattern to establish roles at the start of task execution:
+```
+You are the orchestrator. Your subagents are the developers.
+Your job: delegate each task to a subagent, verify the result, and sequence the work.
+Do not implement directly unless no subagent capability is available.
+```
+
+Role boundaries:
+
+| Role | Responsibilities | Must NOT |
+|---|---|---|
+| Orchestrator (main agent) | Plan tasks, delegate, sequence, verify commits | Implement features directly |
+| Developer (subagent) | Implement one task, commit, report result | Take on adjacent tasks |
+
+---
 
 ### Context Isolation for Task Execution
 
@@ -102,9 +126,16 @@ Do NOT pass the full conversation history. Accumulated context from earlier task
 
 ### Quality Gates
 
-Set up your quality gates before Task 2.0. At minimum: a type check, a linter, and your test runner. Run them after every parent task — not just at the end.
+Set up your quality gates before Task 2.0. At minimum: a type check, a linter, and your test runner. **Configure them as pre-commit hooks** so they fire automatically on every commit attempt — not just as reminders to run manually.
 
-Broken code must not accumulate across tasks. Each parent task should leave the codebase in a passing state before the next one starts. This is the backpressure mechanism that prevents small errors from compounding into large failures.
+```
+# pre-commit hook (tool-agnostic example)
+your-typecheck-command && your-lint-command && your-test-command
+```
+
+When a subagent's commit is rejected by the hook, it sees the error output immediately and self-corrects before continuing. This removes the human from the inner loop. Broken code is caught at the source, not discovered two tasks later.
+
+Each parent task should leave the codebase in a passing state before the next one starts. If a parent task ends with a failing hook, do not proceed to the next task — fix it first.
 
 ### Final Task: Spec Verification
 
