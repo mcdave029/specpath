@@ -4,6 +4,10 @@
 
 To guide an AI assistant in creating a detailed Product Requirements Document (PRD) in Markdown format, based on an initial user prompt. The PRD should be clear, actionable, and suitable for a junior developer to understand and implement the feature.
 
+## When to Use This
+
+**The PRD is optional.** The tracker ticket is the normal source of intent — a well-written ticket (user story, acceptance criteria, problem statement, success measure) already answers what a PRD answers. Generate a PRD only when `intake.md` finds that the ticket, even after clarification, does not sufficiently establish intent, scope, behavior, and success — typically greenfield features or work whose product shape is still being discovered. Never reproduce a good ticket into a second document for ceremony.
+
 ## Process
 
 1.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
@@ -91,4 +95,4 @@ The PRD is the **product layer** — written for stakeholders, product owners, a
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the PRD
 4. Score every section 1–10 and iterate until all sections reach 9/10 — do not save until the PRD is build-ready
-5. After saving the PRD, always tell the user: "PRD saved. Next step: if files affected > 5 or requirements are unclear, run `research.md` first to gather parallel research before the spec. Otherwise go directly to `generate-spec.md`."
+5. After saving the PRD, tell the user: "PRD saved. Next step: brainstorm/design the change (invoking `research.md` whenever design hits a question evidence can answer), then run `generate-spec.md`."
