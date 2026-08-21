@@ -1,52 +1,97 @@
-# Rule: Generating a Task List from a Spec
+# Rule: Generating a One-Pass Implementation Plan
 
 ## Goal
 
-To guide an AI assistant in creating a detailed, step-by-step task list in Markdown format based on a behavioral spec. The task list should guide a developer through implementation with atomic tasks, walking skeleton structure, vertical slices, and leverage information.
+To guide an AI assistant in turning a Ready spec into an ordered implementation plan, parent tasks and sub-tasks together, in a single pass. Every task carries the outcome it delivers, the spec criteria it satisfies, its dependencies, its expected footprint, the existing code it leverages, and the exact command that proves it done.
+
+The plan is generated once, without pausing for confirmation. Review happens afterwards in `preflight-plan.md`, in a fresh context.
 
 ## Output
 
 - **Format:** Markdown (`.md`)
-- **Location:** `/tasks/`
-- **Filename:** `tasks-[feature-name].md`
+- **Location:** `tasks/` by default — a workspace adapter may override the directory and the filename convention
+- **Filename:** `tasks-[feature].md`
+
+## Precondition
+
+The spec must carry `Status: Ready for Implementation`, set by `interrogate-spec.md` after it clears the risk-tier gate from `intake.md`.
+
+- **Spec is Ready:** proceed. Read the spec fully, plus the PRD and research summary if they exist.
+- **Spec exists but is still `Draft`:** STOP. Do not plan against a draft. Route back: "The spec is not Ready for Implementation. Run `interrogate-spec.md` first. Planning against a draft spec means the implementer inherits every unresolved ambiguity."
+- **No spec at all:** allowed only for work that `intake.md` classified LOW tier with deterministic verification: a single-file fix, a config change, a copy update, anything whose correctness a command can settle. Plan directly from the ticket's acceptance criteria, treating each criterion the way success-criterion IDs are treated below. A plan artifact is still produced. No path through this phase ends with zero artifact.
+- **Anything above LOW tier without a Ready spec:** STOP and route back to `generate-spec.md`.
 
 ## Process
 
-1. **Check for Spec:** Before generating tasks, check if `tasks/spec-[feature].md` exists.
-   - **If spec exists:** Read both the spec and PRD fully. Tasks must reference spec sections and frame all implementation work as "satisfy these constraints and success criteria."
-   - **If no spec exists:** STOP and warn the user: "No spec file found for this feature. For any feature where files affected > 5 or requirements are unclear, run `generate-spec.md` first. Skipping the spec means the AI will guess at constraints during implementation. Proceed without a spec only for trivial changes (single-file fixes, config tweaks, copy updates). Reply 'skip spec' to proceed anyway."
-   - Wait for the user to confirm before continuing if no spec was found.
-2. **Receive Requirements:** The user provides a feature request, task description, or points to an existing spec and PRD.
-3. **Analyze Requirements:** Analyze the functional requirements, constraints, and implementation scope from the provided information.
-4. **Phase 1: Generate Parent Tasks:** Create the file and generate the main, high-level tasks. **Always include task 0.0 "Create feature branch" as the first task** unless the user requests otherwise. **Always include task 1.0 "Walking skeleton"** as the first implementation task — stubs, interfaces, type definitions, empty modules with correct signatures, no behavior. When a spec exists, include a final task "Verify all spec success criteria." Present parent tasks to the user and say: "I have generated the high-level tasks. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
-5. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
-6. **Phase 2: Generate Sub-Tasks:** Break down each parent task into smaller, actionable sub-tasks. When a spec exists, each sub-task must cite the relevant spec section (e.g., "see spec §3 Constraints"). Include leverage information pointing to existing code to reuse.
-7. **Identify Relevant Files:** List files that will need to be created or modified, including the spec and PRD if they exist.
-8. **Generate Final Output:** Combine parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
-9. **Save Task List:** Save to `/tasks/tasks-[feature-name].md`.
+1. **Verify the precondition** above and resolve it before writing anything.
+2. **Read the inputs.** The spec (success criteria and their IDs, invariants, verification intent), the PRD for intent, the research summary for prior art, and the repo's steering documents.
+3. **Discover the verification commands.** Find the project's real test runner, linter, type checker, and build from its scripts and config (`package.json`, `Makefile`, `pyproject.toml`, `Gemfile`, CI workflow). Every task needs a concrete runnable command, so discover them now rather than while writing tasks.
+4. **Map criteria to work.** Every `SC-n` and every invariant must be claimed by at least one task. A criterion nothing claims is a gap in the plan, not a criterion to drop.
+5. **Decide whether a walking skeleton is needed** (see below), then slice the rest into vertical slices.
+6. **Write the whole plan in one pass** — parent tasks and sub-tasks together, no confirmation pause. Branch-creation task first, spec-verification task last.
+7. **Check the footprint against PR size** (see below) and flag it if the work should be split into separate tickets.
+8. **List relevant files** — spec, PRD, and research first — and **save** to `tasks/tasks-[feature].md`.
+
+## Per-Task Contract
+
+Every task — parent or sub-task — carries these fields. `Escalate if:` appears only where a real stop condition exists; the rest are required for any task that touches code.
+
+| Field | What it holds |
+|---|---|
+| Outcome | One sentence: the coherent, verifiable thing this task makes true. |
+| `Spec:` | The success-criterion IDs (`SC-1`, `SC-4`) and/or named invariants this task addresses. |
+| `Depends:` | Upstream task numbers, or `none`. |
+| `Footprint:` | Files expected to be created or modified. |
+| `Leverage:` | Existing module, pattern, or utility to reuse instead of reinventing. |
+| `Verify:` | The exact command(s) that prove the task done. |
+| `Escalate if:` | The condition under which the implementer stops and surfaces to the human or amends the spec. |
+
+**Grounding rule for `Footprint:`** Only include exact file paths confirmed from the repo, through the spec, the research summary, or a direct codebase read. If a path is unknown, write `[path TBD — confirm before implementing]`. Do not invent paths with false precision. Fabricated file paths are the most common cause of tasks that fail on the first attempt.
+
+**`Verify:` must be concrete.** The project's own test runner, linter, or build, scoped to the code the task touches. Not "run the tests". Use a placeholder only when the command is genuinely undiscoverable from the repo, and mark it as one.
+
+**`Escalate if:` exists so the implementer does not improvise past a boundary.** Typical conditions: a protected module or interface would have to be touched; the actual footprint materially exceeds what is listed; a spec invariant cannot be satisfied as written. The implementer stops there. It does not renegotiate the spec on its own.
+
+Example task block:
+
+```markdown
+- [ ] 2.1 Reject withdrawal requests above the daily limit
+  Spec: SC-3, SC-4, invariant "no balance goes negative"
+  Depends: 1.0
+  Footprint: src/domain/withdrawal.ext, test/domain/withdrawal_test.ext
+  Leverage: src/domain/limits.ext (existing threshold lookup)
+  Verify: <test-runner> test/domain/withdrawal_test.ext && <linter> src/domain/withdrawal.ext
+  Escalate if: enforcing the limit requires changing the shared ledger interface
+```
 
 ## Task Design Rules
 
-### Walking Skeleton First
+### Task Sizing
 
-Task 1.0 is ALWAYS the walking skeleton: stubs, interfaces, type definitions, and empty modules with correct signatures. No behavior. No logic. This forces architectural thinking before implementation and gives all subsequent tasks a clear structure to fill in.
+A task is sized by coherent, verifiable scope: **one outcome, one verification, a footprint the implementer can hold in mind at once.** Not by a clock and not by a file count. A three-line change across five call sites can be one task; two unrelated behaviors in one file are two. The test is whether a single `Verify:` line actually settles it. If proving the task done takes two unrelated commands checking two unrelated things, it is two tasks.
 
-If you skip the walking skeleton, the AI will make architectural decisions while writing logic — the most expensive time to discover wrong choices.
+**Title discipline:** avoid vague words in task titles. If the title contains "system", "integration", "complete", or "setup", the task is almost certainly oversized, so split it. An implementer handed an oversized task makes architectural decisions mid-implementation, which is the most expensive time to make them.
 
-**Stub patterns for walking skeleton tasks:**
+### Walking Skeleton (Conditional)
 
-| Pattern | When to use | Example |
-|---|---|---|
-| Return empty or hardcoded value | Data layer not yet implemented | `return []` or `return { id: 1 }` |
-| Comment placeholder | Function wiring exists, logic deferred | `// TODO: implement in task 2.1` |
-| Throw "not implemented" | Required interface method, must exist now | `throw new Error("not implemented — see task 2.2")` |
-| `.skip` or `.todo` tests | Test wiring needed, behavior deferred | Confirms test structure without failing the suite |
+Include a walking-skeleton task **only when the change creates new cross-layer structural boundaries**: a new module, service, or interface spanning layers, where the wiring itself is an unproven assumption. Then the skeleton comes first, as stubs, interfaces, type definitions, and empty modules with correct signatures. No behavior, no logic. It forces the architectural decisions into the open before any logic is written.
 
-The goal of the skeleton is to prove the wiring is correct before adding any logic. Every stub should be replaceable by a later task without touching surrounding code.
+For changes that live inside existing structure, **skip it** and start directly with the first vertical slice. A skeleton over structure that already exists is ceremony, and it delays the first real verification.
+
+When the skeleton is used, stub with the lightest pattern that proves the wiring:
+
+| Pattern | When to use |
+|---|---|
+| Return empty or hardcoded value | Data layer not yet implemented |
+| Comment placeholder | Wiring exists, logic deferred to a named later task |
+| Throw "not implemented" | Interface method that must exist now |
+| Skipped or pending test | Test wiring needed, behavior deferred |
+
+Every stub must be replaceable by a later task without touching surrounding code.
 
 ### Vertical Slices
 
-Slice tasks by user-visible outcome, not by layer. Each task should deliver something observable end-to-end.
+Slice by user-visible outcome, not by layer. Each task delivers something observable end-to-end.
 
 **Wrong (layer slicing):**
 - Task 2.0: Build all data access
@@ -54,155 +99,132 @@ Slice tasks by user-visible outcome, not by layer. Each task should deliver some
 - Task 4.0: Build all UI
 
 **Right (vertical slicing):**
-- Task 2.0: User can [do X] (includes data access + logic + UI for this slice)
-- Task 3.0: User can [do Y] (includes data access + logic + UI for this slice)
+- Task 2.0: User can [do X] (data access + logic + UI for that slice)
+- Task 3.0: User can [do Y] (data access + logic + UI for that slice)
 
-### Task Sizing
+### PR-Size Discipline
 
-Every sub-task must meet these criteria before it is considered atomic enough to delegate:
+The plan targets **one vertical slice per pull request**. Before finalizing, add up the expected footprint across all tasks.
 
-| Criterion | Target |
-|---|---|
-| File scope | 1–3 related files maximum |
-| Time to complete | 15–30 minutes |
-| Outcomes | One testable outcome per task |
-| File paths | Exact files to create or modify must be named |
-| Task type | Coding only — no deployment, no user testing, no documentation-only tasks |
+If the total exceeds what one human reviewer can hold in a single sitting, a soft guideline of roughly 400 changed lines excluding lockfiles, generated schema files, and snapshots, the work should be split into separate tickets **before implementation starts**, not planned as one oversized PR. Count behavior units and changed contracts more heavily than raw lines: a 600-line mechanical rename reviews easily; a 200-line change across four contracts does not.
 
-**Title discipline:** Avoid vague words in task titles. If the title contains "system", "integration", "complete", or "setup", the task is almost certainly too broad — split it.
-
-If a task exceeds these bounds, split it before presenting parent tasks to the user. An AI agent that receives an oversized task will make architectural decisions mid-implementation.
-
-### Leverage Information
-
-Every sub-task that touches existing code must include a Leverage line pointing to the relevant existing module, pattern, or utility. Each sub-task should also name the exact files it will create or modify:
-
-```markdown
-- [ ] 2.1 Implement [behavior — see spec §3 Constraints]
-  Files: path/to/file-to-create.ext, path/to/file-to-modify.ext
-  Leverage: path/to/existing/module.ext
-```
-
-The `Files:` field makes scope explicit before the agent starts. The `Leverage:` field prevents the AI from reinventing patterns that already exist. Both are required for any sub-task that touches code.
-
-**Grounding rule:** Only include exact file paths if confirmed from the repo — through the spec, research summary, or a direct codebase read. If a path is unknown, write `[path TBD — confirm before implementing]`. Do not invent paths with false precision. Fabricated file paths are the most common cause of tasks that fail on the first attempt.
+The planner's job is to **flag** this, with the estimate and the suggested split points. Splitting the work is a human and tracker action, not something this phase performs.
 
 ### Atomic Commits
 
-Every completed task must be committed before moving to the next one. This is a hard rule, not a suggestion.
+Every completed task is committed before the next one starts. This is a hard rule.
 
-One task = one commit. If a task is partially done, do not commit. If a task fails, the rollback does not affect any previously committed task. This makes recovery possible at any point without losing all prior work.
+One task = one commit. If a task is partially done, do not commit. If a task fails, the rollback does not touch any previously committed task, so recovery is possible at any point without losing prior work.
 
 ### Role Assignment
 
-Before generating any tasks, declare roles explicitly. The main agent is the orchestrator — its job is to plan, delegate, and verify. Subagents are the implementers — each receives one task, executes it, commits, and stops.
-
-**The orchestrator must not drift into direct implementation.** When you find yourself writing implementation logic in the main session, stop. Create a task and delegate it.
-
-Prompt pattern to establish roles at the start of task execution:
-```
-You are the orchestrator. Your subagents are the developers.
-Your job: delegate each task to a subagent, verify the result, and sequence the work.
-Do not implement directly unless no subagent capability is available.
-```
-
-Role boundaries:
+Declare roles before generating tasks. The main agent is the orchestrator: it plans, delegates, sequences, and verifies. Subagents are the implementers: each receives one task, executes it, commits, and stops. **The orchestrator must not drift into direct implementation.** When you find yourself writing implementation logic in the main session, stop, create a task, and delegate it.
 
 | Role | Responsibilities | Must NOT |
 |---|---|---|
 | Orchestrator (main agent) | Plan tasks, delegate, sequence, verify commits | Implement features directly |
-| Developer (subagent) | Implement one task, commit, report result | Take on adjacent tasks |
-
----
+| Implementer (subagent) | Implement one task, run its `Verify:`, commit, report | Take on adjacent tasks |
 
 ### Context Isolation for Task Execution
 
-When delegating tasks to subagents, each subagent receives only:
-1. The spec (`tasks/spec-[feature].md`)
-2. The specific task it is implementing
-3. The relevant leverage file paths
+Each implementer subagent receives only:
+1. The spec
+2. The one task it is implementing, with its full field block
+3. The `Leverage:` paths named in that task
 
-Do NOT pass the full conversation history. Accumulated context from earlier tasks introduces assumptions and patterns that contaminate downstream implementations. Fresh context per task is a hard rule, not a performance optimization.
+Do NOT pass the full conversation history. Accumulated context from earlier tasks carries assumptions and patterns that contaminate downstream implementations. Fresh context per task is a hard rule, not a performance optimization.
 
 ### Quality Gates
 
-Set up your quality gates before Task 2.0. At minimum: a type check, a linter, and your test runner. **Configure them as pre-commit hooks** so they fire automatically on every commit attempt — not just as reminders to run manually.
+Set up quality gates before the first implementation task: at minimum a type check, a linter, and the test runner. **Configure them as pre-commit hooks** so they fire on every commit attempt rather than living as reminders.
 
 ```
 # pre-commit hook (tool-agnostic example)
 your-typecheck-command && your-lint-command && your-test-command
 ```
 
-When a subagent's commit is rejected by the hook, it sees the error output immediately and self-corrects before continuing. This removes the human from the inner loop. Broken code is caught at the source, not discovered two tasks later.
-
-Each parent task should leave the codebase in a passing state before the next one starts. If a parent task ends with a failing hook, do not proceed to the next task — fix it first.
+When an implementer's commit is rejected by the hook, it sees the error immediately and self-corrects. Broken code is caught at the source instead of surfacing two tasks later. Each parent task leaves the codebase in a passing state before the next begins; if a parent task ends with a failing hook, fix it before proceeding.
 
 ### Final Task: Spec Verification
 
-When a spec exists, the final task is always "Verify all spec success criteria." The agent checks each Given/When/Then criterion in the spec §5 and confirms it is met — not by running tests, but by tracing the behavior through the implementation.
+The last task is always "Verify all spec success criteria." It does three things: confirms that **every `SC-n` has passing verification evidence**, meaning a command that ran and passed, named against the criterion; traces every constraint and invariant through the code rather than only through tests; and runs the relevant test scope to confirm no regressions.
 
 ## Output Format
 
 ```markdown
-# Tasks: [Feature Name]
+# Implementation Plan: [Feature Name]
 
 ## Relevant Files
 
-<!-- If a spec was generated, always list it first -->
-- `tasks/spec-[feature-name].md` - Behavioral spec — read before writing any code.
-- `tasks/prd-[feature-name].md` - Product requirements — context for why this is being built.
-- `tasks/research-[feature-name].md` - Research summary (if it exists).
+<!-- Spec, PRD, and research first -->
+- `tasks/spec-[feature].md` - Behavioral spec (Status: Ready for Implementation). Read before writing any code.
+- `tasks/prd-[feature].md` - Product requirements. Context for why this is being built.
+- `tasks/research-[feature].md` - Research summary (if it exists).
 
-- `path/to/file.ext` - Brief description of why this file is relevant.
-- `path/to/another/file.ext` - Brief description.
+- `path/to/file.ext` - Why this file is relevant.
 
-### Notes
+## Footprint & PR Size
 
-- Set up quality gates (type check, linter, test runner) before Task 2.0 and run them after every parent task.
-- One task = one commit. Commit before moving to the next task. Never batch commits across tasks.
-- When delegating to subagents: give each subagent fresh context — the spec, the task, and leverage paths only. No conversation history.
-- **When a spec exists:** Definition of done = all spec §5 Success Criteria met, verified by the final task.
+- Estimated changed lines: [n] (excluding lockfiles, generated schema, snapshots)
+- Behavior units / contracts changed: [n]
+- Verdict: [fits one PR] | [FLAG: exceeds one review. Suggested split: ...]
+
+## Notes
+
+- Quality gates (type check, linter, test runner) configured as pre-commit hooks before the first implementation task.
+- One task = one commit. Never batch commits across tasks.
+- Implementer subagents get fresh context: spec, one task, leverage paths. No conversation history.
+- Definition of done: every `SC-n` in the spec has passing verification evidence.
 
 ## Instructions for Completing Tasks
 
-**IMPORTANT:** As you complete each task, check it off by changing `- [ ]` to `- [x]`. Update after completing each sub-task, not just after completing a parent task.
+**IMPORTANT:** As you complete each task, check it off by changing `- [ ]` to `- [x]`. Update after each sub-task, not only after the parent task.
 
 ## Tasks
 
 - [ ] 0.0 Create feature branch
-  - [ ] 0.1 Create and checkout a new branch for this feature
+  - [ ] 0.1 Create and checkout a branch for this feature
+    Depends: none
+    Verify: <vcs-command showing the expected branch>
 
+<!-- Include 1.0 ONLY if this change creates new cross-layer structural boundaries -->
 - [ ] 1.0 Walking skeleton
-  - [ ] 1.1 Create all new files with empty stubs and correct signatures — no behavior yet
-  - [ ] 1.2 Define all interfaces, types, and module boundaries [see spec §1 Reference Architecture]
-  - [ ] 1.3 Confirm the skeleton compiles / imports cleanly before adding any logic
+  - [ ] 1.1 Create new files as stubs with correct signatures, no behavior
+    Spec: [reference architecture section]
+    Depends: 0.0
+    Footprint: [path/to/file.ext]
+    Verify: <build-or-typecheck-command>
 
 - [ ] 2.0 [First vertical slice — user-visible outcome]
-  - [ ] 2.1 [Sub-task — see spec §3 Constraints]
-    Files: [path/to/file.ext]
+  - [ ] 2.1 [Outcome in one sentence]
+    Spec: SC-1, SC-2
+    Depends: 1.0
+    Footprint: [path/to/file.ext], [path TBD — confirm before implementing]
     Leverage: [path/to/existing/module]
-  - [ ] 2.2 [Sub-task — see spec §4 Phase 2]
-    Files: [path/to/file.ext]
-    Leverage: [path/to/existing/pattern]
+    Verify: <test-runner scoped to the touched code>
+    Escalate if: [condition requiring a stop and a human decision]
 
 - [ ] 3.0 [Second vertical slice — user-visible outcome]
-  - [ ] 3.1 [Sub-task — see spec §3 Constraints]
-    Files: [path/to/file.ext]
-    Leverage: [path/to/existing/module]
-  - [ ] 3.2 [Sub-task — see spec §4 Phase 2]
-    Files: [path/to/file.ext]
+  - [ ] 3.1 [Outcome in one sentence]
+    Spec: SC-3, invariant "[name]"
+    Depends: 2.0
+    Footprint: [path/to/file.ext]
     Leverage: [path/to/existing/pattern]
+    Verify: <test-runner scoped to the touched code>
 
 - [ ] N.0 Verify all spec success criteria
-  - [ ] N.1 Trace each Given/When/Then in spec §5 through the implementation
-  - [ ] N.2 Confirm all spec §3 Constraints are enforced — not just in tests, in the code
-  - [ ] N.3 Run full test suite — confirm no regressions
+  - [ ] N.1 Confirm every SC-n has passing verification evidence, named against the criterion
+  - [ ] N.2 Trace every constraint and invariant through the code, not only through tests
+  - [ ] N.3 Run the relevant test scope and confirm no regressions
 ```
 
-## Interaction Model
+## Final Instructions
 
-The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details.
+1. Do NOT implement anything in this phase. This phase produces a plan.
+2. Generate the full plan in one pass, with no confirmation pause between parent tasks and sub-tasks.
+3. Save to `tasks/tasks-[feature].md` unless the workspace adapter specifies another location.
+4. After saving, the next step is: **run `preflight-plan.md` in a FRESH context** before implementation begins. Do not roll into execution from this session.
 
 ## Target Audience
 
-Assume the primary reader of the task list is a developer implementing the feature with AI assistance. Tasks should be atomic enough that an AI agent can complete each one in a single focused session without needing to make architectural decisions mid-task.
+Assume the reader is a developer implementing the feature with AI assistance, and that individual tasks will be handed to implementer subagents with no other context. Each task must be self-sufficient: an implementer reading one task block should know what to build, what it must satisfy, where it lives, what to reuse, how to prove it, and when to stop and ask.

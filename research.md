@@ -2,22 +2,26 @@
 
 ## Goal
 
-Compress hours of sequential investigation into minutes. Produce a research summary that directly feeds the spec, so the AI generating the spec has zero information gaps to guess at.
+Compress hours of sequential investigation into minutes. Produce a research summary with tagged evidence quality, so the phase that invoked it resumes on facts instead of guesses.
 
 ## When to Use This
 
-Run this step after `create-prd.md` and **before** `generate-spec.md` when:
+**Research is not a fixed phase — it is an on-demand engine.** Invoke it from any point in the pipeline (design/brainstorm, spec writing, interrogation, planning) the moment work hits an uncertainty that evidence can answer. Route uncertainty by kind:
 
-- Files affected > 5
-- Requirements are unclear or involve unfamiliar territory
-- The feature touches existing systems you need to understand before designing
+| Uncertainty | Route |
+|---|---|
+| Missing repository fact (does X exist, how does Y work here) | Research it — this file |
+| Unknown library / provider / platform behavior | Research it — this file |
+| Product behavior genuinely undefined | Ask the human — evidence cannot decide intent |
+| Meaningful architecture tradeoff | Ask the human |
+| Security or privacy policy decision | Ask the human |
 
-Skip this step for single-file changes or features in well-understood domains.
+Scale the invocation to the question: a single bounded question needs one targeted sub-agent, not the full multi-thread decomposition below. Use the full parallel decomposition when a feature's problem space has several independent unknowns.
 
 ## Process
 
 1. **Check for steering documents:** Before decomposing into threads, check if project constitution files exist (`CLAUDE.md`, `AGENTS.md`, `product.md`, `tech.md`, `structure.md`). If they exist, read them — they may answer questions that would otherwise require a full research thread, and they define the architecture the spec must respect. If none exist, note it in the synthesis: architectural assumptions in this research are inferred from codebase evidence only.
-2. **Receive the PRD:** The user provides a path to `tasks/prd-[feature].md` or describes the feature directly.
+2. **Receive the question(s):** The invoking phase provides the specific uncertainty (and the ticket, PRD, or spec context it arose from).
 3. **Decompose into research threads:** Identify 3–5 independent questions the research must answer. See thread types below.
 4. **Spawn parallel subagents:** One subagent per thread. Each subagent starts with fresh context — no shared state, no conversation history passed between threads.
 5. **Collect findings:** Each subagent produces a focused written summary of its thread.
@@ -72,7 +76,7 @@ Save as `tasks/research-[feature].md`:
 ```markdown
 # Research: [Feature Name]
 
-**PRD:** tasks/prd-[feature].md
+**Invoked from:** [the phase and question that triggered this research — e.g. "spec §4, does a retry helper exist"]
 **Date:** [date]
 
 ---
@@ -165,5 +169,5 @@ The parallelism benefit is reduced but the structured research output still sign
 2. **Do NOT suggest implementation code.** Findings only.
 3. Each subagent must have fresh context — do not share conversation history between threads.
 4. **Explicitly surface conflicts** between threads in the Synthesis section. Unresolved conflicts that are buried will cause problems in the spec.
-5. Present the synthesis to the user and wait for confirmation before proceeding.
-6. After saving: "Research saved to `tasks/research-[feature].md`. Next step: run `generate-spec.md` and point it at both the PRD and this research file."
+5. Surface the synthesis (including anything Unresolved) to the phase that invoked the research — and to the human when the findings change a decision they own.
+6. After saving: "Research saved to `tasks/research-[feature].md`." Then return to the phase that invoked it, carrying the tagged findings.

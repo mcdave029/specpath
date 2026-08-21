@@ -1,188 +1,238 @@
-# Rule: Generating a Behavioral Spec from a PRD
+# Rule: Generating an Engineering Spec
 
 ## Goal
 
-Translate a PRD (and research summary, if available) into a precise behavioral specification an AI agent can implement without guessing.
+Produce the **engineering contract** for a ticket or feature: what changes, what must stay true, where the change stops, and how anyone will know it worked.
 
-**Constraints matter more than requirements.** "Do NOT pre-fetch more than 3 items" eliminates wrong implementations. "Make it fast" does not. Every constraint in the spec is one fewer assumption the implementing agent has to make.
+**Delta-oriented.** For a change to existing behavior, state the exact change *against current behavior*. Never regenerate a description of the whole system: a spec that re-describes what already works buries the one paragraph that matters and invites the implementing agent to rewrite things nobody asked it to touch.
 
-This is the technical layer between the product layer (PRD) and the execution layer (tasks). The spec is written for the AI, not for stakeholders.
+**A dated decision record.** Like an ADR, the spec captures what was decided, when, and on what evidence. It goes stale by design and does not claim to mirror the code forever. A later reader treats it as "this is what we decided on that date," not as live documentation.
 
-## When to Use This
+**Constraints matter more than requirements.** "Do NOT pre-fetch more than 3 items" eliminates wrong implementations. "Make it fast" does not. Every constraint written down is one fewer assumption the implementing agent has to invent.
 
-Run this step after `create-prd.md` (and `research.md` if Phase 1 ran) and **before** `generate-tasks.md`. The task list will reference the spec and frame all implementation work as "satisfy these constraints and success criteria."
+## Inputs
+
+| Input | Role |
+|---|---|
+| The ticket | **Primary intent source** — user story, acceptance criteria, success measure |
+| Risk tier from `intake.md` | LOW / STANDARD / HIGH; drives the status gate below |
+| PRD | Only if one was generated (`create-prd.md` runs only when ticket intent was insufficient) |
+| Research artifacts | If any were produced; `research.md` is on-demand, not a mandatory phase |
+| Design / brainstorm conclusions | The decisions already reached with the humans |
+
+The ticket is the intent of record. Where the ticket and a stale PRD disagree, the ticket wins.
 
 ## Process
 
-1. **Check for steering documents:** Before generating the spec, check if project constitution files exist in this repo (`CLAUDE.md`, `AGENTS.md`, `product.md`, `tech.md`, `structure.md`). If they exist, read them first — they define architecture, conventions, and constraints that would otherwise be guessed. If none exist, note it: assumptions about current architecture and patterns will be inferred from the research and codebase only, and must be tagged as such in §2.
-2. **Receive inputs:** The user provides `tasks/prd-[feature].md` and, if it exists, `tasks/research-[feature].md`.
-3. **Ask clarifying questions:** 2–3 questions maximum — only for gaps that block spec precision. See guidelines below.
-3. **Generate `spec-[feature].md`:** Use the 5-section template below.
-4. **Self-critique:** Before presenting, ask internally: "What would a critical reviewer flag as ambiguous or missing?" Address any P1 issues (blocking ambiguities) before presenting.
-5. **Present to user:** Show the draft spec. Wait for review and corrections.
-6. **Save:** Write to `tasks/spec-[feature].md`.
-7. **Recovery note:** The spec is the recovery point. If a session derails, context fills, or implementation drifts from intent — open a new session, pin the spec, and resume from the last committed task. The spec contains everything the next session needs. No context rebuilding required.
+1. **Check steering documents.** Read the project's constitution files (`AGENTS.md`, `product.md`, `tech.md`, `structure.md`, or whatever root file your tool reads) before writing anything. They define architecture, conventions, and prohibitions that would otherwise be guessed. If none exist, say so in the spec: every architectural claim then rests on the codebase and research alone, and must be tagged accordingly in §4.
+2. **Read the ticket, its risk tier, and any research.** Confirm you can state the intent in one sentence before writing the spec.
+3. **Write the spec** using the eleven-section template below.
+4. **Self-critique.** Ask internally: "What would a critical reviewer flag as ambiguous, unverifiable, or missing?" Fix every blocking ambiguity before handing off.
+5. **Do NOT interview the human.** Route each gap by its kind:
+   - **Material product, architecture, or security judgment** — ask the human directly, as a small number of targeted questions. These are the calls you are not entitled to make.
+   - **Repo or library facts** — do not ask; invoke `research.md` and find out.
+   - **Everything else** — decide it, record the decision and its reasoning in the spec, and move on. An unrecorded decision is the same as an unanswered question.
+6. **Hand off to `interrogate-spec.md`.** The interrogation runs in a fresh context and is what moves the spec toward `Ready for Implementation`.
 
-## Clarifying Question Guidelines
-
-Ask only when the answer is not clear from the PRD or research. Focus on:
-
-- Which existing components or systems does this touch?
-- Who is allowed to perform this action?
-- What happens in the failure case?
-- Are there performance or scale constraints?
-
-**Limit to 3 questions.** If more are needed, the PRD needs more work first.
-
-Number questions and provide lettered options where possible:
-
-```
-1. Which existing system handles [X]?
-   A. [Option]
-   B. [Option]
-   C. I'll decide during implementation
-```
+**Recovery point.** The spec is the session-restart artifact. If a session derails, context fills, or implementation drifts from intent — open a new session, pin the spec, resume from the last committed task. The spec carries everything the next session needs; no context rebuilding required.
 
 ## Output: `spec-[feature].md`
 
 ```markdown
 # Spec: [Feature Name]
 
-**PRD:** tasks/prd-[feature].md
-**Research:** tasks/research-[feature].md (omit if no research was run)
+**Ticket:** [ticket reference]
+**Date:** [YYYY-MM-DD]
+**Author:** [author]
+**Risk tier:** LOW | STANDARD | HIGH
 **Status:** Draft
+**Spec version:** 1
 
 ---
 
-## 1. Reference Architecture
+## 1. Source & Context
 
-How is this type of problem solved in this codebase or ecosystem?
-What existing pattern should be followed?
-
-[Describe the pattern, not the implementation. Reference existing code
-locations if known from research. If no clear precedent exists, name
-the general pattern and why it applies here.]
+[Link the ticket. Link the PRD only if one exists, and research artifacts if any.
+One paragraph: what this ticket is asking for, in your own words.]
 
 ---
 
-## 2. Current Architecture
+## 2. Risk Classification
 
-What exists today that this feature touches or extends?
+**Tier:** [LOW | STANDARD | HIGH]
 
-[List affected modules, services, data stores, and interfaces.
-Describe current state only — not desired state.
-If the feature is entirely new with no touchpoints, say so.
+[One paragraph of rationale against your team's rubric — the workspace adapter
+supplies the criteria. Name the specific factors that set the tier.]
 
-Tag each item with its evidence quality:
+Uncertainty rounds **UP**. The tier is re-evaluated at plan preflight and again at
+final-diff verification; it may escalate there, but never silently drops.
+
+---
+
+## 3. Change / Delta
+
+The exact change against current behavior. This is the heart of the spec.
+
+**Today:** [what the system does now]
+**After this change:** [what it will do instead]
+
+[Enumerate each behavioral difference. For genuinely new surface area with no prior
+behavior, say so and describe only the new surface — not the surrounding system.]
+
+---
+
+## 4. Current / Reference Architecture
+
+What exists today that this touches, and the pattern to follow.
+
+[Affected modules, services, data stores, interfaces — then the existing pattern this
+change should follow, with code locations if known. Describe the pattern, not the
+implementation. If no precedent exists, name the general pattern and why it applies.]
+
+Tag every claim with its evidence quality:
 - **[Confirmed]** — directly observed in the codebase, research, or steering documents
-- **[Inferred]** — logical conclusion from observed evidence, not directly read
-- **[Unresolved]** — could not be determined; surface as an Open Question
+- **[Inferred]** — a logical conclusion from observed evidence, not directly read
+- **[Unresolved]** — could not be determined; carry it to Open Questions
 
-Do not present Inferred architecture as Confirmed. An inferred module that does not exist will
-produce a task that fails on the first line.]
+Do not present Inferred architecture as Confirmed. An inferred module that does not
+exist produces a task that fails on its first line.
 
 ---
 
-## 3. Constraints
+## 5. Invariants
 
-What must NOT happen. This is the most important section.
+What MUST remain true after the change — system properties, data integrity, security
+properties.
+
+- [e.g. "every ledger entry still balances to zero"]
+- [e.g. "a request without a valid session can never read another tenant's rows"]
+
+Invariants are properties *preserved*; constraints (§6) are actions *forbidden or
+required*. An invariant survives any implementation; a constraint governs this one.
+
+---
+
+## 6. Constraints
+
+What must NOT happen, and what must ALWAYS happen.
 
 - Do NOT [specific action to avoid]
-- Do NOT [another constraint]
-- NEVER [hard invariant that cannot be violated]
+- NEVER [hard rule that cannot be violated]
 - ALWAYS [non-negotiable requirement]
 
-[Make each constraint specific enough that an AI agent cannot misinterpret it.
+Make each one specific enough that an agent cannot reinterpret it.
 
 Vague: "Handle errors properly."
-Specific: "On network failure, retry 3 times with exponential backoff
-starting at 100ms, then surface the error to the caller — do NOT
-swallow silently or return a partial result."]
+Specific: "On network failure, retry 3 times with exponential backoff starting at
+100ms, then surface the error to the caller — do NOT swallow it silently or return a
+partial result."
 
 ---
 
-## 4. Implementation Plan
+## 7. Contract Decisions
 
-[Plain language description of the approach. Phased if the feature is large.
-Reference the pattern from Section 1. Reference the constraints from Section 3.
-This is not pseudocode — it is a narrative the AI uses to orient itself.]
+*(when applicable — write "None" if this change crosses no durable contract)*
 
-**Phase 1:** [Walking skeleton — stubs, interfaces, type definitions, empty
-modules with correct signatures. No behavior.]
+Durable contracts belong here when they are part of the architectural decision: API
+request/response shapes, event formats, message envelopes, schemas consumed by other
+systems or teams.
 
-**Phase 2:** [Core behavior and logic]
-
-**Phase 3:** [Edge cases, error handling, and polish]
+The line: **durable contracts in, implementation prescription out.** How a function is
+written is out of scope — unless the prescription is what protects a boundary or a
+contract, in which case it belongs here and names the boundary it protects.
 
 ---
 
-## 5. Success Criteria
+## 8. Data Scope
 
-How we know this is done. Must be measurable and observable.
-Use Given/When/Then format.
+*(required — never omit; write "No data-lifecycle change" if that is the case)*
 
-- [ ] Given [initial context], when [action is taken], then [observable outcome]
-- [ ] Given [initial context], when [action is taken], then [observable outcome]
-- [ ] [Performance criterion: operation completes within X under Y conditions]
-- [ ] [Security or invariant criterion: X is never exposed / always enforced]
+- **Data touched:** [entities, fields, stores]
+- **Lifecycle changes:** [create / read / retain / delete / migrate]
+- **Personal or otherwise sensitive data involved:** [yes/no, and which]
+
+Changes to personal-data handling or to data lifecycle classify **HIGH** tier. Your
+team's rubric, supplied by the workspace adapter, binds the specifics of what counts.
+
+---
+
+## 9. Implementation Boundaries
+
+Where the change stops.
+
+- **Out of bounds:** [files, modules, systems this change must not touch]
+- **Deferred:** [adjacent work that is real but explicitly not in this ticket, with
+  where it goes instead]
+
+---
+
+## 10. Success Criteria
+
+Measurable and observable. Each criterion carries a stable ID so verification evidence
+can bind to it later.
+
+- **SC-1** — Given [context], when [action], then [observable outcome]
+- **SC-2** — Given [context], when [action], then [observable outcome]
+- **SC-3** — [performance, security, or invariant criterion: X completes within Y / is
+  never exposed / is always enforced]
+
+IDs are stable. If an amendment drops a criterion, mark it withdrawn rather than
+renumbering the rest.
+
+---
+
+## 11. Verification Intent
+
+How each success criterion will be verified — the *kind* of check, not the command.
+
+| ID | Verification |
+|---|---|
+| SC-1 | [unit test / integration test / lint / build / end-to-end walk / manual or visual review] |
+| SC-2 | [...] |
+
+Intent only. The plan supplies exact commands per task.
 
 ---
 
 ## Open Questions
 
-[Anything unresolved that the interview phase should surface.
-If nothing is unresolved, write "None — spec is ready for interview."]
+[Anything unresolved, each tagged with who or what resolves it — human judgment,
+research, or the interrogation. If nothing is unresolved, write "None."]
 ```
 
 ## Spec Status Lifecycle
 
-The `Status` field in the spec header moves through three states. Never skip a state.
+Two states, not three. There is no `Ready for Interview` state, and no unconditional human review gate.
 
 | Status | Set by | Meaning |
 |---|---|---|
-| `Draft` | `generate-spec.md` on creation | Spec written, not yet reviewed |
-| `Ready for Interview` | User after reviewing the draft | Spec is accurate, ready to be interrogated |
-| `Ready for Implementation` | `interview-spec.md` after all questions resolved | All ambiguities resolved, safe to generate tasks |
+| `Draft` | `generate-spec.md` on creation | Spec written; not yet interrogated |
+| `Ready for Implementation` | after `interrogate-spec.md`, subject to the tier gate below | Safe to plan against |
 
-The spec should never reach `generate-tasks.md` while still in `Draft` status.
+The transition is gated by risk tier:
+
+| Tier | Gate |
+|---|---|
+| LOW | Mark `Ready for Implementation` and continue |
+| STANDARD | Post the spec where the humans will see it — they may object at any time — and continue |
+| HIGH | **STOP.** Explicit human approval is required before `Ready for Implementation` |
+
+**Amendments after Ready** increment `Spec version` and re-trigger the tier gate for the amended content. A HIGH-tier amendment needs approval again; it does not inherit the earlier one.
 
 ## What This Spec Does NOT Contain
 
-- API endpoint request/response shapes — too prescriptive, constrains the AI unnecessarily
-- Test skeletons — tests are the backpressure mechanism, separate from the spec
-- Database schema definitions — these belong in implementation, derived from constraints
-- State machine diagrams — unless the feature is fundamentally state-driven and the diagram is the clearest way to express it
+- **Test skeletons.** Tests are the backpressure mechanism, generated with the plan — not here.
+- **Implementation prescription that does not protect a boundary or contract.** If it does protect one, it goes in §7 and says which.
+- **A full-system description where a delta suffices.** Regenerating what already works is noise, and noise is what implementing agents act on by mistake.
 
-## Lightweight Spec Variant
-
-For features that do not warrant a full spec but are too risky to skip entirely:
-
-```markdown
-# Lightweight Spec: [Feature Name]
-
-**PRD:** tasks/prd-[feature].md
-**Status:** Ready for Implementation
-
-## Constraints
-- Do NOT [constraint]
-- NEVER [constraint]
-- ALWAYS [constraint]
-
-## Success Criteria
-- [ ] Given [context], when [action], then [outcome]
-- [ ] Given [context], when [action], then [outcome]
-```
-
-80% of the value. 20% of the overhead. Use when:
-- Files affected = 2–5
-- Requirements are clear but the change is non-trivial
-- A full spec would be disproportionate to the scope
+One format only. A LOW-tier spec is naturally short because the delta is small — sections may collapse to a single line ("Contract Decisions: none"), but every section is present. Absence is a signal; a missing section is indistinguishable from a forgotten one.
 
 ## Final Instructions
 
 1. **Do NOT write implementation code.** Spec only.
-2. **Do NOT generate test skeletons.** Tests are a separate concern.
-3. **Constraints section is mandatory.** Never leave it empty. If you cannot identify constraints, the PRD is not clear enough.
-4. **Self-critique before presenting:** "What ambiguities remain that could cause a wrong implementation?"
-5. **Present the spec to the user before saving.** Wait for approval or corrections.
-6. After saving: "Spec saved to `tasks/spec-[feature].md`. Next step: run `interview-spec.md` to surface failure-causing questions before tasks are created."
+2. **Do NOT generate test skeletons.**
+3. **Constraints, Invariants, and Data Scope are mandatory.** If you cannot fill them, the ticket intent is not clear enough yet — go back to `intake.md`.
+4. **Tag every architectural claim** [Confirmed] / [Inferred] / [Unresolved]. Never upgrade a guess.
+5. **Self-critique before handing off:** "What ambiguity here could still cause a wrong implementation?"
+6. **Save to `tasks/spec-[feature].md`** by default. Workspace adapters may override the location and naming convention.
+7. After saving: "Spec saved to `tasks/spec-[feature].md`. Next step: run `interrogate-spec.md` in a **fresh context** — not this authoring conversation."

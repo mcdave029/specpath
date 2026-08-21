@@ -28,9 +28,9 @@ The spec eliminates both. It is the external memory that survives sessions, and 
 
 ## The Solution
 
-Context persistence + explicit constraints = reliable output.
+Context persistence + explicit constraints + fresh-context review = reliable output.
 
-Specs survive session restarts. Constraints eliminate guessing. Phase gates catch problems at the cheapest possible moment.
+Specs survive session restarts. Constraints eliminate guessing. Fresh-context interrogation and preflight catch problems at the cheapest possible moment — and they catch the problems the authoring context cannot see in its own work.
 
 The spec is also a recovery mechanism. If a session derails, context fills, or implementation drifts from intent — open a new session, pin the spec, and resume from the last committed task. No context rebuilding required.
 
@@ -39,12 +39,10 @@ The cost of ambiguity escalates sharply once work begins:
 | Stage | Cost to fix |
 |---|---|
 | In the spec | 5 minutes |
-| In the interview | 10 minutes |
+| In interrogation / preflight | 10 minutes |
 | In code | 30 minutes |
 | After first commit | 2-4 hours |
 | In production | 8-16 hours |
-
-One 10-minute spec review eliminates entire categories of production incidents.
 
 ---
 
@@ -62,139 +60,42 @@ Three standard files:
 | `tech.md` | Tech stack, architectural patterns, constraints, what NOT to use |
 | `structure.md` | Project layout, naming conventions, file organization rules |
 
-Where to put them depends on your tooling:
+If your project already has a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`, those serve the same purpose — you do not need separate steering files. The content matters more than the filename. Keep them short, update them when the project changes, commit every update.
 
-| Location | When to use |
+---
+
+## The Pipeline (v3)
+
+specpath is **ticket-first**: the tracker ticket is the normal source of intent, and depth of process is decided by **risk tier**, not by ceremony.
+
+| File | Role | When it runs |
+|---|---|---|
+| `intake.md` | Ticket sufficiency check + risk classification (LOW / STANDARD / HIGH) | Every ticket, first |
+| `create-prd.md` | Product Requirements Document | **Optional** — only when the ticket cannot establish intent |
+| `research.md` | Parallel evidence gathering with tagged findings | **On demand** — whenever any phase hits a question evidence can answer |
+| `generate-spec.md` | The engineering spec: delta-oriented contract with invariants, constraints, data scope, verification intent | Every non-trivial change |
+| `interrogate-spec.md` | Fresh-context interrogation — a context that did not author the spec tries to break it | After the spec; sets `Ready for Implementation` through the tier gate |
+| `generate-tasks.md` | One-pass implementation plan — per-task outcomes, dependencies, footprint, leverage, verification commands | After the spec is Ready |
+| `preflight-plan.md` | Fresh-context plan review — feasibility, coverage, boundaries, scope | After the plan, before implementation |
+
+### Risk tiers decide the human touchpoints
+
+| Tier | Spec gate |
 |---|---|
-| `CLAUDE.md` at root | Claude Code — single flat file, simpler projects |
-| `AGENTS.md` at root | Multi-tool projects (Claude Code, Codex, OpenCode, Copilot) |
-| `.claude/steering/` | Prefer structured separation, Claude Code only |
-| `docs/steering/` | Team prefers a docs directory |
+| **LOW** | Flows to implementation without an intermediate human gate |
+| **STANDARD** | Spec is posted/surfaced when Ready; humans may object at any time |
+| **HIGH** (protected paths, destructive data changes, new integrations, durable contracts, sensitive data) | Explicit human spec approval before implementation |
 
-If your project already has a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`, those serve the same purpose — you do not need separate steering files. The content matters more than the filename.
+Uncertainty rounds UP, and the tier is re-evaluated at preflight and again against the final diff — it can escalate, never silently drop. The concrete rubric (protected paths, what counts as sensitive) is supplied per workspace; `intake.md` carries the generic criteria.
 
-Keep them short. Update them when the project changes. Commit every update.
+### What changed from v2
 
----
-
-## Three Levels of Commitment
-
-Not every feature needs the same investment. Pick your level before starting.
-
-| Level | Name | What it means | When to use |
-|---|---|---|---|
-| 1 | Spec-First | Spec is a planning artifact, discarded after the build | Prototypes, personal projects, single-session work |
-| 2 | Spec-Anchored | Spec and code are both maintained as living artifacts that evolve together | Team projects, systems with a 6+ month lifespan |
-| 3 | Spec-as-Source | Code is regenerated from the spec on demand | Experimental — identical specs do not produce identical code; git diffs become unpredictable |
-
-**Default:** Start at Level 1. Graduate to Level 2 when you are collaborating with a team or maintaining a system long-term. Level 3 is a frontier pattern — understand the tradeoffs before committing to it.
-
-The pipeline below applies to all three levels. What changes is whether the spec is kept and maintained after implementation.
-
----
-
-## The Pipeline
-
-| Phase | File | Output | When to use |
-|---|---|---|---|
-| 0 | `create-prd.md` | `prd-[feature].md` | Always, before any spec work |
-| 1 | `research.md` | `research-[feature].md` | Files affected > 5 OR requirements unclear |
-| 2 | `generate-spec.md` | `spec-[feature].md` | After PRD (and research if Phase 1 ran) |
-| 3 | `interview-spec.md` | Updated spec | After spec is drafted |
-| 4 | `generate-tasks.md` | `tasks-[feature].md` | After interview confirms spec is complete |
-
-### Decision Framework
-
-```
-files affected > 5  OR  requirements unclear  →  full pipeline (all 5 phases)
-borderline case                                →  lightweight spec + phases 3-4
-single file / incident / prototype             →  skip to Phase 4 directly
-```
-
-When in doubt, run the spec. The overhead is 15 minutes. The downside of skipping it can be days.
-
----
-
-## Files
-
-### `create-prd.md` — Phase 0
-
-Guides the AI through clarifying questions and produces a scored Product Requirements Document. The PRD is the product layer: what you are building and why. It is written for humans and stakeholders.
-
-**Output:** `tasks/prd-[feature].md`
-
-**When:** Always. Even for internal tools and small features. A PRD forces you to articulate the problem before you start solving it.
-
----
-
-### `research.md` — Phase 1
-
-Compresses hours of investigation into minutes using parallel subagents with context isolation. Each subagent gets a focused research thread (current codebase, reference implementations, design patterns, relevant docs, integration points). Results are synthesized into a single research summary.
-
-**Output:** `tasks/research-[feature].md`
-
-**When:** Files affected > 5 OR requirements are unclear. Skip for single-file changes where the domain is well understood.
-
----
-
-### `generate-spec.md` — Phase 2
-
-Translates the PRD (and research summary, if available) into a precise behavioral specification. The spec is the technical layer: what the system must and must not do, written for the AI implementing it.
-
-The spec has five sections:
-1. Reference Architecture — the pattern to follow
-2. Current Architecture — what exists today
-3. Constraints — what must NOT happen (the most important section)
-4. Implementation Plan — phased approach
-5. Success Criteria — Given/When/Then acceptance tests
-
-**Constraints matter more than requirements.** "Do NOT pre-fetch more than 3 items" eliminates wrong implementations. "Make it fast" does not.
-
-**Output:** `tasks/spec-[feature].md`
-
-**When:** After PRD. Always before tasks for non-trivial features.
-
----
-
-### `interview-spec.md` — Phase 3
-
-The AI reads the spec and asks every question that could cause implementation failure. This is the refinement phase: surface ambiguities before a single line of code is written.
-
-Five ambiguity categories the AI will probe:
-1. Data Decisions — boundary values, null handling, validation rules
-2. Conflict Resolution — which rule wins when two apply
-3. Pattern Selection — edge cases where the spec's chosen pattern does not apply
-4. Failure Recovery — retry strategy, partial success, error surfacing
-5. Boundary Conditions — scale, scope, adjacent system interference
-
-Each answer updates the spec inline. The interview ends when all five categories are addressed and the spec Status is updated to "Ready for Implementation."
-
-**Output:** Refined `tasks/spec-[feature].md`
-
-**When:** After spec is drafted. Before tasks are generated. Non-negotiable.
-
----
-
-### `generate-tasks.md` — Phase 4
-
-Breaks the spec into an ordered, atomic task list. Three structural rules:
-
-**Walking skeleton first.** Task 1.0 is always stubs, interfaces, type definitions, and empty modules with correct signatures. No behavior. This forces architectural thinking before logic.
-
-**Vertical slices.** Each task delivers a user-visible outcome end-to-end. Not "backend work" followed by "frontend work" for the same feature.
-
-**Leverage information.** Every task references existing code to reuse:
-```
-- [ ] 2.1 Implement [behavior]
-  Spec: §3 Constraints, §4 Phase 1
-  Leverage: path/to/existing/module
-```
-
-The final task is always "Verify all spec success criteria" — the AI checks each Given/When/Then in the spec and confirms it is met.
-
-**Output:** `tasks/tasks-[feature].md`
-
-**When:** After the interview confirms the spec is complete.
+- **Ticket-first intake** replaces "PRD always". A good ticket is not reproduced into a second document.
+- **Research is an engine, not a phase.** Invoke it the moment design, spec, interrogation, or planning hits an evidence-answerable question.
+- **Fresh-context interrogation replaces the human interview.** Evidence questions get researched, mechanical ambiguities get fixed, and only material product/architecture/security judgment reaches the human. (This is the adversarial `review-spec.md` the old README proposed — built, and extended.)
+- **The spec is an engineering contract**: delta-oriented, with invariants, implementation boundaries, data scope, verification intent — and durable contracts (API shapes, event formats, schemas) are *included* when they are the architectural decision.
+- **One-pass plan generation** — no mid-generation confirmation pause; a fresh-context preflight reviews the plan instead.
+- **Walking skeleton is conditional** — only when the change creates new cross-layer structural boundaries.
 
 ---
 
@@ -209,23 +110,18 @@ git clone https://github.com/mcdave029/specpath.git
 Then invoke each phase by pointing your AI at the relevant file:
 
 ```
-Use @create-prd.md
-Here is the feature I want to build: [describe it]
-```
-
-```
-Use @research.md
-PRD: @tasks/prd-[feature].md
+Use @intake.md
+Ticket: [id / paste the ticket]
 ```
 
 ```
 Use @generate-spec.md
-PRD: @tasks/prd-[feature].md
-Research: @tasks/research-[feature].md
+Ticket: [id]  Risk tier: [from intake]
+Research: @tasks/research-[feature].md   (if any)
 ```
 
 ```
-Use @interview-spec.md
+Use @interrogate-spec.md          <- run in a FRESH context
 Spec: @tasks/spec-[feature].md
 ```
 
@@ -234,11 +130,31 @@ Use @generate-tasks.md
 Spec: @tasks/spec-[feature].md
 ```
 
+```
+Use @preflight-plan.md            <- run in a FRESH context
+Plan: @tasks/tasks-[feature].md
+Spec: @tasks/spec-[feature].md
+```
+
+Fresh context means a new session or an isolated subagent that receives the artifact and repository access — never the conversation that produced the artifact.
+
+---
+
+## Levels of Commitment
+
+| Level | Name | What it means | When to use |
+|---|---|---|---|
+| 1 | Spec-First | Spec is a planning artifact, discarded after the build | Prototypes, personal projects |
+| 2 | Spec-Anchored | Spec is kept as a **dated decision record** — like an ADR, it captures what was decided and goes stale by design | Team projects, long-lived systems |
+| 3 | Spec-as-Source | Code is regenerated from the spec on demand | Experimental — not recommended |
+
+Default: Level 1 for throwaway work, Level 2 for anything with a lifespan. A Level 2 spec is not maintained to mirror the code — it is superseded by the next ticket's spec, the way ADRs supersede each other.
+
 ---
 
 ## Credits
 
-Phase 0 (`create-prd.md`) and the original Phase 4 (`generate-tasks.md`) are based on [snarktank/ai-dev-tasks](https://github.com/snarktank/ai-dev-tasks).
+Phase 0 (`create-prd.md`) and the original task-generation prompt are based on [snarktank/ai-dev-tasks](https://github.com/snarktank/ai-dev-tasks).
 
 SDD methodology informed by the [Panaversity Agent Factory curriculum](https://agentfactory.panaversity.org) and the broader spec-driven development community.
 
@@ -246,8 +162,4 @@ SDD methodology informed by the [Panaversity Agent Factory curriculum](https://a
 
 ## Contributing
 
-Open an issue or submit a pull request. The goal is a toolkit that works across stacks, teams, and project sizes without requiring customization.
-
-### Future Enhancement: Adversarial Review
-
-A potential Phase 3.5 (`review-spec.md`): a second agent reads the completed spec and actively tries to break it — finding contradictions, unverifiable constraints, missing failure paths, and architectural assumptions that cannot be confirmed. Adversarial by design. The interview phase asks clarifying questions; the adversarial reviewer tries to prove the spec is wrong. Proposed, not yet built.
+Open an issue or submit a pull request. The goal is a toolkit that works across stacks, teams, and project sizes without requiring customization — workspace-specific bindings (output paths, tracker wiring, risk rubrics) belong in thin per-workspace adapters, not in these files.
