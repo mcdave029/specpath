@@ -2,7 +2,7 @@
 
 ## Goal
 
-To guide an AI assistant in turning a Ready spec into an ordered implementation plan, parent tasks and sub-tasks together, in a single pass. Every task carries the outcome it delivers, the spec criteria it satisfies, its dependencies, its expected footprint, the existing code it leverages, and the exact command that proves it done. The plan is directly consumable by execution harnesses that extract per-task briefs by heading (superpowers subagent-driven-development's `task-brief` and `review-package` scripts read this format as-is).
+To guide an AI assistant in turning a Ready spec into an ordered implementation plan — one flat sequence of tasks — in a single pass. Every task carries the outcome it delivers, the spec criteria it satisfies, its dependencies, its expected footprint, the existing code it leverages, and the exact command that proves it done. The plan is directly consumable by execution harnesses that extract per-task briefs by heading (superpowers subagent-driven-development's `task-brief` and `review-package` scripts read this format as-is).
 
 The plan is generated once, without pausing for confirmation. Review happens afterwards in `preflight-plan.md`, in a fresh context.
 
@@ -28,13 +28,15 @@ The spec must carry `Status: Ready for Implementation`, set by `interrogate-spec
 3. **Discover the verification commands.** Find the project's real test runner, linter, type checker, and build from its scripts and config (`package.json`, `Makefile`, `pyproject.toml`, `Gemfile`, CI workflow). Every task needs a concrete runnable command, so discover them now rather than while writing tasks.
 4. **Map criteria to work.** Every `SC-n` and every invariant must be claimed by at least one task. A criterion nothing claims is a gap in the plan, not a criterion to drop.
 5. **Decide whether a walking skeleton is needed** (see below), then slice the rest into vertical slices.
-6. **Write the whole plan in one pass** — parent tasks and sub-tasks together, no confirmation pause. Spec-verification task last. Branch/worktree setup is the execution harness's job, never a plan task.
-7. **Check the footprint against PR size** (see below) and flag it if the work should be split into separate tickets.
-8. **List relevant files** — spec, PRD, and research first — and **save** to `tasks/tasks-[feature].md`.
+6. **Anchor the plan.** Record the Base SHA — the branch head this plan is written against. The header carries it, and every line number the plan cites is relative to it, which is what makes the staleness caveat meaningful rather than decorative.
+7. **Copy the binding constraints.** Lift the spec's invariants and constraints into `## Global Constraints` VERBATIM, with their exact values. Execution harnesses hand that block to reviewers as their attention lens, so a constraint left out of it is a constraint nobody checks. Do not paraphrase and do not summarize — a rounded threshold is a changed requirement.
+8. **Write the whole plan in one pass** — every task, first to last, no confirmation pause. Spec-verification task last. Branch/worktree setup is the execution harness's job, never a plan task.
+9. **Check the footprint against PR size** (see below) and flag it if the work should be split into separate tickets.
+10. **List relevant files** — spec, PRD, and research first — and **save** to `tasks/tasks-[feature].md`.
 
 ## Per-Task Contract
 
-Every task — parent or sub-task — carries these fields. `Escalate if:` appears only where a real stop condition exists; the rest are required for any task that touches code.
+Every task carries these fields. `Escalate if:` appears only where a real stop condition exists; the rest are required for any task that touches code.
 
 | Field | What it holds |
 |---|---|
@@ -100,13 +102,13 @@ Every stub must be replaceable by a later task without touching surrounding code
 Slice by user-visible outcome, not by layer. Each task delivers something observable end-to-end.
 
 **Wrong (layer slicing):**
-- Task 2.0: Build all data access
-- Task 3.0: Build all business logic
-- Task 4.0: Build all UI
+- Task 2: Build all data access
+- Task 3: Build all business logic
+- Task 4: Build all UI
 
 **Right (vertical slicing):**
-- Task 2.0: User can [do X] (data access + logic + UI for that slice)
-- Task 3.0: User can [do Y] (data access + logic + UI for that slice)
+- Task 2: User can [do X] (data access + logic + UI for that slice)
+- Task 3: User can [do Y] (data access + logic + UI for that slice)
 
 ### PR-Size Discipline
 
@@ -212,7 +214,7 @@ Verify: [the relevant test scope]
 ## Final Instructions
 
 1. Do NOT implement anything in this phase. This phase produces a plan.
-2. Generate the full plan in one pass, with no confirmation pause between parent tasks and sub-tasks.
+2. Generate the full plan in one pass, with no confirmation pause between tasks.
 3. Save to `tasks/tasks-[feature].md` unless the workspace adapter specifies another location.
 4. After saving, the next step is: **run `preflight-plan.md` in a FRESH context** before implementation begins. Do not roll into execution from this session.
 5. The saved plan must satisfy the Format Contract — a plan that cannot be sliced by task heading fails its consumers.
