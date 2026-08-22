@@ -88,6 +88,10 @@ specpath is **ticket-first**: the tracker ticket is the normal source of intent,
 
 Uncertainty rounds UP, and the tier is re-evaluated at preflight and again against the final diff — it can escalate, never silently drop. The concrete rubric (protected paths, what counts as sensitive) is supplied per workspace; `intake.md` carries the generic criteria.
 
+### The plan is a machine-consumable artifact
+
+`generate-tasks.md` emits one rigid format — flat `### Task N:` headings, a `## Global Constraints` block, a header naming the spec — designed so execution harnesses can slice it mechanically into per-task briefs (superpowers subagent-driven-development's scripts consume it directly). The plan freezes once preflight passes: progress tracking belongs to the execution harness's ledger, so the format carries no checkboxes. specpath owns plan content; the execution harness owns roles, dispatch, commits, review loops, and gates.
+
 ### What changed from v2
 
 - **Ticket-first intake** replaces "PRD always". A good ticket is not reproduced into a second document.

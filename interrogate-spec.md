@@ -24,6 +24,7 @@ Work through all of these; report only real findings:
 8. **Ambiguity and contradiction** — statements a reasonable implementer could read two ways; sections that contradict each other or the ticket.
 9. **Missing failure cases** — failure paths the spec never mentions.
 10. **Wrong-satisfaction paths** — ways an implementation could satisfy the letter of every criterion while defeating the intent.
+11. **Criteria-vs-criteria consistency** — do the success criteria cohere as a set? Two criteria no single implementation can satisfy simultaneously, overlapping criteria that disagree about the same behavior, or one criterion silently narrowing another. A spec-internal contradiction caught here is the cheapest catch it will ever get; missed, it resurfaces as a plan-review escalation.
 
 ## Routing Every Finding
 

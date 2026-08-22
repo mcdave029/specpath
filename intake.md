@@ -37,6 +37,14 @@ The generic contract — your workspace adapter maps these to its tracker's conc
 
 A "Blocker" verdict means: ask the human the specific missing question(s), then re-check. A "Repair" verdict means: fix it yourself per the tracker's conventions and note that you did.
 
+### Verify Enumerable Claims
+
+Tickets carry intent; the repository carries facts. When the ticket asserts a countable or enumerable fact about the codebase — "the three call sites", "both templates", "only consumed by X" — verify the enumeration against the repository during intake instead of accepting it. The sufficiency checklist tests whether intent is established; it cannot catch a wrong count, and a wrong enumeration mis-scopes everything downstream (the unlisted case is routinely the one that matters). Record what was verified, and correct the ticket where it was wrong.
+
+### Disjunctive Acceptance Criteria
+
+An acceptance criterion that bundles a decision — "either A or B", "X, or Y if X proves infeasible" — is a decision hiding in a checklist. Flag it at intake and route the decision like any other uncertainty: evidence-answerable → research it; material product or architecture judgment → ask the human. Downstream consequences, recorded so no phase improvises them: the spec records the chosen branch and why; the unchosen branch's criteria are annotated not-applicable with the reason — never silently ticked, never silently deleted; verification evidence binds to the chosen branch only.
+
 ## Risk Rubric
 
 Three tiers. **Uncertainty rounds UP.** The tier is re-evaluated at plan preflight (actual plan and footprint) and again at final-diff verification; it may stay or escalate, never silently drop.
@@ -52,6 +60,16 @@ What the tier buys:
 - **LOW** — the pipeline flows without human touch until the pull-request review.
 - **STANDARD** — the spec is posted/surfaced when Ready; the human may object at any time; work proceeds.
 - **HIGH** — explicit human approval of the spec before implementation begins. Consider having your strongest reasoning configuration drive the design session.
+
+## Mid-Flight Intake
+
+Intake sometimes arrives late: work is already in progress — commits or merged changes exist — but no workflow state was ever recorded. That is a late intake, not a resume:
+
+1. **Snapshot the acceptance criteria as they stand NOW.** Positional criterion IDs bind from this moment; the snapshot is dated at intake, and earlier reordering is invisible by design.
+2. **Record the CURRENT base SHA.** The anchor exists to bind future evidence, not to reconstruct history.
+3. **Inventory what already landed** — merged changes, open branches, existing artifacts — and record it in the intake outcome. A criterion claimed already-satisfied gets verified evidence like any other: merged never implies passed.
+4. **Classify risk on the remaining work**, rounding UP if landed work touched protected paths — its review debt is inherited.
+5. **Say that intake was late** in the recorded outcome, so downstream phases know the spec and plan may partially describe behavior that already shipped.
 
 ## Output
 
