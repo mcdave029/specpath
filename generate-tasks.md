@@ -46,12 +46,17 @@ Every task carries these fields. `Escalate if:` appears only where a real stop c
 | `Footprint:` | Files expected to be created or modified. |
 | `Leverage:` | Existing module, pattern, or utility to reuse instead of reinventing. |
 | `Interfaces:` | *(optional)* What this task consumes from earlier tasks and produces for later ones — exact names and signatures. An implementer sees only its own task; this field is how cross-task contracts travel. |
-| `Verify:` | The exact command(s) that prove the task done. |
+| `Deliverable:` | *(no-diff tasks only — required there)* The exact artifact the task produces when its outcome is not a code change: an audit report, a published comment, an evidence file. Names the thing the reviewer reviews (see No-Diff Tasks). |
+| `Verify:` | The exact command(s) that prove the task done — one assertion per line (see below). |
 | `Escalate if:` | The condition under which the implementer stops and surfaces to the human or amends the spec. |
 
 **Grounding rule for `Footprint:`** Only include exact file paths confirmed from the repo, through the spec, the research summary, or a direct codebase read. If a path is unknown, write `[path TBD — confirm before implementing]`. Do not invent paths with false precision. Fabricated file paths are the most common cause of tasks that fail on the first attempt.
 
 **`Verify:` must be concrete.** The project's own test runner, linter, or build, scoped to the code the task touches. Not "run the tests". Use a placeholder only when the command is genuinely undiscoverable from the repo, and mark it as one.
+
+**One assertion per line.** When proving a task takes more than two independent assertions, write one command per line — each line must pass on its own — or point at a committed verification script. Never stack assertions into a long `&&` chain: a chain fails as a unit without saying which clause failed, and quoting that survives one shell breaks in another, so a chain whose clauses all pass individually can still exit non-zero as a whole. One line per assertion is also what lets a re-run isolate the failing clause immediately.
+
+**Executable harnesses are committed files, referenced by path — never inlined.** When verification needs more than the project's own commands (a purpose-built assertion script, a render-and-diff harness), the harness is committed beside the plan — in the plan's own directory by default; a workspace adapter may name another location — and that committed file is the **executable of record**. The `Verify:` line references it by repo-relative path. Do not inline the harness body in the plan, and do not reference a path outside the repository — a session-local scratch directory does not survive the session, so its Verify line dangles for whoever resumes. An inline copy diverges from the executable the first time a fix round has to change the harness, and a plan frozen at preflight cannot follow — a later session re-materializing the harness from plan text would run the stale version. Changing a committed harness is a normal code change, reviewed like one.
 
 **`Verify:` commands never contain secret values.** When a verification step needs a credential, key, or token, the command derives it at run time — from the environment, a secrets manager, or version history (`git show <sha>:<path>` for a value that legitimately lives in a historical file) — and never quotes the value itself. A committed plan is a durable artifact: a pasted secret in a Verify line is a leak, whether or not any scanner's rules would match it.
 
@@ -110,6 +115,15 @@ Slice by user-visible outcome, not by layer. Each task delivers something observ
 - Task 2: User can [do X] (data access + logic + UI for that slice)
 - Task 3: User can [do Y] (data access + logic + UI for that slice)
 
+### No-Diff Tasks (audits, evidence, published reports)
+
+Some tasks legitimately produce no code diff: a repo audit whose deliverable is a findings report, an evidence-collection task, a report published to the tracker. These carry the same contract with two adjustments:
+
+- **`Deliverable:` is required** — the exact artifact the task produces (a path or a destination). A no-diff task without a named deliverable is unverifiable and unreviewable.
+- **The review gate is an artifact review, not a diff review.** Execution harnesses that review by code diff have nothing to extract for these tasks; the harness must route them to a reviewer that receives the deliverable itself, the task's own section, and the spec criteria it claims to satisfy. Skipping review because there is no diff is not an option: a published claim that is wrong costs a public correction afterward, which is exactly the failure a review seat exists to catch beforehand.
+
+`Verify:` still applies wherever part of the deliverable is mechanically checkable (the artifact exists, its counts match a pinned extraction command); the artifact review covers what commands cannot.
+
 ### PR-Size Discipline
 
 The plan targets **one vertical slice per pull request**. Before finalizing, add up the expected footprint across all tasks.
@@ -122,7 +136,7 @@ The planner's job is to **flag** this, with the estimate and the suggested split
 
 Execution harnesses slice the plan mechanically: per-task briefs are extracted by heading, and an implementer receives ONLY its own task's section. The grammar is rigid:
 
-1. **One heading per task:** `### Task N: [title]` — flat integers starting at 1, in file order. Never hierarchical numbering (`Task 2.1` defeats number-boundary matching).
+1. **One heading per task:** `### Task N: [title]` — flat integers starting at 1, in file order. Never hierarchical numbering (`Task 2.1` defeats number-boundary matching). Amendments continue this numbering with the next integer (see Amendments Append).
 2. **A task's section is self-sufficient.** Everything between its heading and the next task heading travels with the task — and nothing else does. Exact values, code, and context the implementer needs go inside the section.
 3. **Nothing after the last task.** Trailing sections would be swept into the final task's brief. Every plan-level section precedes `## Tasks`.
 4. **No other heading may look like a task.** No heading anywhere else in the file may match the shape `Task <number>`. (Extractors skip fenced code blocks, so examples inside fences are safe.)
@@ -130,7 +144,18 @@ Execution harnesses slice the plan mechanically: per-task briefs are extracted b
 
 ### The Plan Freezes at Preflight
 
-Once the plan passes its preflight review, the file is immutable for the duration of execution: no checkbox ticks, no status notes, no inline edits. Progress tracking belongs to the execution harness's ledger — one owner per datum — which is why this format has no checkboxes at all. Mid-execution bookkeeping edits pollute review diffs or force noise commits; both failure modes disappear when the plan is read-only. A plan defect discovered mid-execution is ruled on in the harness's ledger; a material conflict with the spec amends the spec (versioned) and regenerates the affected plan sections — an amendment event, never bookkeeping.
+Once the plan passes its preflight review, the file is immutable for the duration of execution: no checkbox ticks, no status notes, no inline edits. Progress tracking belongs to the execution harness's ledger — one owner per datum — which is why this format has no checkboxes at all. Mid-execution bookkeeping edits pollute review diffs or force noise commits; both failure modes disappear when the plan is read-only. A plan defect discovered mid-execution is ruled on in the harness's ledger; a material conflict with the spec amends the spec (versioned) and **appends** tasks per the amendment contract below — an amendment event, never bookkeeping.
+
+### Amendments Append — Completed Work Is Never Regenerated
+
+A frozen plan admits exactly one kind of write. After an approved spec amendment, the new work is APPENDED after the last existing task, continuing the flat numbering (the next integer onward — never a hierarchical insertion like "1.b", which defeats number-boundary extraction). Nothing already in the file is edited:
+
+- **Each appended task is a full, self-sufficient brief** per the Per-Task Contract, and opens with its amendment provenance inside the section — the spec version that sanctioned it and the approval reference — because brief extraction hands the implementer only that block.
+- **Existing sections are never regenerated.** A completed task's section describes work already executed; "regenerating the affected section" produces a block that mixes done-work with new work, and a brief extracted from it hands the implementer already-executed instructions. If an amendment supersedes a task that has not yet run, the supersession is recorded in the harness's ledger (the task is skipped there) — the plan text stands.
+- **The appended set ends with a verification task — full or scoped, decided by timing.** If the original "Verify all spec success criteria" task has NOT yet run when the amendment lands, the harness's ledger rules it superseded (like any superseded task — the text stands) and the appended set closes with the FULL spec-verification task, run against the amended spec; otherwise the not-yet-run original would false-fail on amended criteria whose implementing tasks sit after it in file order, or a scoped sweep would leave the plan with no full sweep at all. Only an amendment landing AFTER the original verification task already ran closes with a scoped re-verification: the amended criteria, plus any criterion whose earlier evidence the appended work invalidates. Either way the amendment never reaches back to edit the original task's text.
+- **The append is committed as a dedicated amendment-event commit**, so the plan's history shows exactly which tasks each spec version added.
+
+The Format Contract survives amendments by construction: appended tasks are new last tasks (nothing follows them), the numbering stays flat and increasing, and every block is self-sufficient.
 
 ### Division of Labor
 
@@ -139,6 +164,8 @@ This phase owns plan CONTENT: what to build, in what order, against which criter
 ### Final Task: Spec Verification
 
 The last task is always "Verify all spec success criteria." It does three things: confirms that **every `SC-n` has passing verification evidence**, meaning a command that ran and passed, named against the criterion; traces every constraint and invariant through the code rather than only through tests; and runs the relevant test scope to confirm no regressions.
+
+When an amendment appends tasks, the appended set closes with its own verification task — the full sweep if the original has not yet run (the ledger rules the original superseded), a scoped re-verification otherwise (see Amendments Append); "last" means last in file order after any amendments.
 
 ## Output Format
 
@@ -186,7 +213,8 @@ Depends: none
 Footprint: [path/to/file.ext], [path TBD — confirm before implementing]
 Leverage: [path/to/existing/module]
 Interfaces: [optional — what this produces that later tasks consume, exact names/signatures]
-Verify: [test-runner scoped to the touched code]
+Deliverable: [no-diff tasks only — the exact artifact produced (path or destination)]
+Verify: [one assertion per line, or a committed verification script referenced by path]
 Escalate if: [condition requiring a stop and a human decision]
 
 [Everything else the implementer needs — exact values, code, edge cases — goes
