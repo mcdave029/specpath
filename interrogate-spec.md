@@ -35,9 +35,10 @@ Each finding takes exactly one route:
 | Resolvable by evidence (repo fact, library behavior, doc lookup) | Research it now (`research.md`, bounded pass) and fix the spec with tagged evidence |
 | Mechanically fixable ambiguity (wording, missing case with an obvious answer consistent with intent) | Fix the spec directly; record what changed |
 | Material product / architecture / security-policy judgment | Ask the human — the specific question, the options, a recommendation |
+| Already settled by a documented standing project decision (a decisions file, ADR, or preloaded skill the project provides) | Apply the decision and cite it in the resolution; never route it to the human as an open question. A spec that contradicts the decision is a spec fix, not a question |
 | Not a real problem on inspection | Discard; do not pad the report |
 
-Never ask the human a question that evidence could answer. Never silently guess on a material judgment.
+Never ask the human a question that evidence could answer, or that a standing project decision already answers. Never silently guess on a material judgment.
 
 ## Outcome by Risk Tier
 
