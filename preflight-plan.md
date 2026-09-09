@@ -25,6 +25,7 @@ After `generate-tasks.md`, before implementation begins. Like interrogation, the
 | Mechanical plan problem (missing dependency edge, oversized task, missing/wrong verify command, ordering) | Correct the plan directly; record each correction |
 | Footprint/scope expansion with an evident cause | Correct the plan to match the spec, or flag for split if the spec genuinely needs the larger footprint |
 | Material conflict with the spec or architecture | Escalate to the human; the resolution amends the spec (new spec version), and affected plan sections are regenerated |
+| Already settled by a documented standing project decision (a decisions file, ADR, or preloaded skill the project provides) | Apply the decision, cite it, correct the plan if it contradicts the decision; never escalate it as an open question |
 | Protected-boundary hit or tier escalation | Reclassify; apply the HIGH-tier gate before proceeding |
 
 ## Output Contract
