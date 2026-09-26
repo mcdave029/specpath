@@ -62,7 +62,7 @@ Every task carries these fields. `Escalate if:` appears only where a real stop c
 
 **`Escalate if:` exists so the implementer does not improvise past a boundary.** Typical conditions: a protected module or interface would have to be touched; the actual footprint materially exceeds what is listed; a spec invariant cannot be satisfied as written. The implementer stops there. It does not renegotiate the spec on its own.
 
-**Line references go stale.** Task briefs are read after earlier tasks have already changed the code, so anchor references by content — function or symbol names, unique strings — rather than bare line numbers. Where a `file:line` reference is genuinely useful, the task block MUST carry the caveat beside it: *line numbers are as of the plan's Base SHA; re-locate by content before editing.* The caveat lives inside the task block because brief extraction hands the implementer only that block.
+**Line references go stale.** Task briefs are read after earlier tasks have already changed the code, so anchor references by content — function or symbol names, unique strings — rather than bare line numbers. Where a `file:line` reference is genuinely useful, the task block MUST carry the caveat beside it: *line numbers are as of the plan's Base SHA; re-locate by content before editing.* The caveat lives inside the task block because brief extraction hands the implementer only that block. The same rule binds the code the plan produces: an implementer never writes a `file:line` into a source comment; it anchors by name. And the plan never prescribes a code comment: where a fact must be recorded, prescribe the example that pins it.
 
 Example task block:
 
